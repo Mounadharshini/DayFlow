@@ -1,20 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Bell, Search, User, LogOut, ChevronDown, CheckCircle2 } from 'lucide-react';
+import { Search, User, LogOut, ChevronDown } from 'lucide-react';
 import { useAuth } from '../AuthContext';
-import { api } from '../api';
+import NotificationCenter from './NotificationCenter';
 import { getAvatarUrl } from '../utils/avatar';
 
 export default function Navbar() {
   const { auth, token, user, logout } = useAuth();
-  const activeToken = token || auth?.token;
   const activeUser = user || auth?.user;
 
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [notifications, setNotifications] = useState([]);
-  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
 
   // Compute Page Title from route
@@ -37,34 +34,6 @@ export default function Navbar() {
   };
 
   const title = getPageTitle(location.pathname);
-
-  const fetchNotifs = async () => {
-    if (!activeToken) return;
-    try {
-      const data = await api.getNotifications(activeToken);
-      setNotifications(Array.isArray(data) ? data : []);
-    } catch (e) {
-      setNotifications([]);
-    }
-  };
-
-  useEffect(() => {
-    fetchNotifs();
-    const interval = setInterval(fetchNotifs, 15000);
-    return () => clearInterval(interval);
-  }, [activeToken]);
-
-  const notifList = Array.isArray(notifications) ? notifications : [];
-  const unreadCount = notifList.filter(n => n && !n.isRead).length;
-
-  const handleMarkAllRead = async () => {
-    if (!activeToken) return;
-    try {
-      await api.markNotificationsRead(activeToken);
-      setNotifications(prev => (Array.isArray(prev) ? prev : []).map(n => ({ ...n, isRead: true })));
-    } catch (e) {}
-  };
-
   const avatarUrl = getAvatarUrl(activeUser);
 
   return (
@@ -111,64 +80,13 @@ export default function Navbar() {
           />
         </div>
 
-        {/* Notification Bell Dropdown */}
-        <div className="notification-bell-container" style={{ position: 'relative' }}>
-          <button 
-            className="bell-btn" 
-            onClick={() => { setShowNotifDropdown(!showNotifDropdown); setShowProfileDropdown(false); }}
-          >
-            <Bell size={18} />
-            {unreadCount > 0 && <span className="bell-badge">{unreadCount}</span>}
-          </button>
-
-          {showNotifDropdown && (
-            <div className="notification-dropdown">
-              <div className="notif-header">
-                <div style={{ fontWeight: 800, fontSize: 14, color: '#2b1b12' }}>Notifications ({unreadCount} new)</div>
-                {unreadCount > 0 && (
-                  <button onClick={handleMarkAllRead} style={{ background: 'transparent', border: 'none', color: '#b37a4c', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-                    Mark all read
-                  </button>
-                )}
-              </div>
-
-              <div style={{ maxHeight: 280, overflowY: 'auto' }}>
-                {notifList.length > 0 ? (
-                  notifList.slice(0, 4).map(n => (
-                    <div key={n.id || Math.random()} className={`notif-item ${!n.isRead ? 'unread' : ''}`}>
-                      <div style={{ background: n.type === 'success' ? '#9c6137' : '#b37a4c', color: 'white', width: 26, height: 26, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <CheckCircle2 size={14} />
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 700, fontSize: 13, color: '#2b1b12' }}>{n.title}</div>
-                        <div style={{ fontSize: 12, color: '#7a6758', marginTop: 2 }}>{n.message}</div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div style={{ padding: 20, textAlign: 'center', color: '#7a6758', fontSize: 13 }}>
-                    No notifications yet.
-                  </div>
-                )}
-              </div>
-
-              <div style={{ padding: 12, background: '#fdfaf6', borderTop: '1px solid #eee5d8', textAlign: 'center' }}>
-                <Link 
-                  to="/notifications" 
-                  onClick={() => setShowNotifDropdown(false)}
-                  style={{ fontSize: 12, fontWeight: 700, color: '#b37a4c', textDecoration: 'none' }}
-                >
-                  View All Notifications &rarr;
-                </Link>
-              </div>
-            </div>
-          )}
-        </div>
+        {/* Real-Time Database Notification Center Component */}
+        <NotificationCenter />
 
         {/* Profile Avatar & Dropdown */}
         <div style={{ position: 'relative' }}>
           <div 
-            onClick={() => { setShowProfileDropdown(!showProfileDropdown); setShowNotifDropdown(false); }}
+            onClick={() => setShowProfileDropdown(!showProfileDropdown)}
             style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
           >
             <img 

@@ -40,6 +40,7 @@ export const api = {
   checkOut: (token) => request('/attendance/checkout', { method: 'POST', token }),
   getMyAttendance: (token, range) => request(`/attendance/me${range ? `?range=${range}` : ''}`, { token }),
   getAllAttendance: (token, params = '') => request(`/attendance${params}`, { token }),
+  updateAttendanceRecord: (token, id, payload) => request(`/attendance/${id}`, { method: 'PUT', body: payload, token }),
 
   // Leaves
   applyLeave: (token, payload) => request('/leaves', { method: 'POST', body: payload, token }),
@@ -48,11 +49,17 @@ export const api = {
   updateLeave: (token, id, payload) => request(`/leaves/${id}`, { method: 'PUT', body: payload, token }),
 
   // Payroll
-  getMyPaystub: (token) => request('/payroll/me', { token }),
+  getMyPayroll: (token) => request('/payroll/me', { token }),
   getAllPayrolls: (token) => request('/payroll', { token }),
+  updateSalaryStructure: (token, userId, payload) => request(`/payroll/salary-structure/${userId}`, { method: 'PUT', body: payload, token }),
+  issuePaystub: (token, payload) => request('/payroll/issue-paystub', { method: 'POST', body: payload, token }),
+  updatePayrollRecord: (token, recordId, payload) => request(`/payroll/record/${recordId}`, { method: 'PUT', body: payload, token }),
 
   // Analytics & Notifications
   getAnalytics: (token) => request('/analytics', { token }),
   getNotifications: (token) => request('/notifications', { token }),
   markNotificationsRead: (token) => request('/notifications/mark-read', { method: 'PUT', token }),
+  markNotificationRead: (token, id) => request(`/notifications/${id}/read`, { method: 'PUT', token }),
+  deleteNotification: (token, id) => request(`/notifications/${id}`, { method: 'DELETE', token }),
+  clearAllNotifications: (token) => request('/notifications/clear-all', { method: 'DELETE', token }),
 };

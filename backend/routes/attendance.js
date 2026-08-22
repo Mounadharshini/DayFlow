@@ -19,7 +19,7 @@ function calcHours(inTimeStr, outTimeStr) {
   return diffMins > 0 ? parseFloat((diffMins / 60).toFixed(1)) : 8.0;
 }
 
-// Employee check-in
+// Employee check-in (Validates duplicate check-in)
 router.post('/checkin', auth, (req, res) => {
   const date = todayStr();
   const existing = db.prepare('SELECT * FROM attendance WHERE userId = ? AND date = ?').get(req.user.id, date);
@@ -35,13 +35,13 @@ router.post('/checkin', auth, (req, res) => {
   }
 
   db.prepare(`INSERT INTO notifications (userId, title, message, type) VALUES (?,?,?,?)`)
-    .run(req.user.id, 'Check-In Success', `Checked in today at ${time}`, 'success');
+    .run(req.user.id, 'Check-In Success ⏱️', `Checked in today at ${time}`, 'success');
 
   const record = db.prepare('SELECT * FROM attendance WHERE userId = ? AND date = ?').get(req.user.id, date);
   res.json(record);
 });
 
-// Employee check-out
+// Employee check-out (Validates check-in existence and duplicate check-out)
 router.post('/checkout', auth, (req, res) => {
   const date = todayStr();
   const existing = db.prepare('SELECT * FROM attendance WHERE userId = ? AND date = ?').get(req.user.id, date);
@@ -58,13 +58,13 @@ router.post('/checkout', auth, (req, res) => {
   db.prepare('UPDATE attendance SET checkOut = ?, workHours = ? WHERE id = ?').run(outTime, hours, existing.id);
 
   db.prepare(`INSERT INTO notifications (userId, title, message, type) VALUES (?,?,?,?)`)
-    .run(req.user.id, 'Check-Out Completed', `Checked out at ${outTime}. Total logged duration: ${hours} hrs`, 'info');
+    .run(req.user.id, 'Check-Out Completed 👋', `Checked out at ${outTime}. Total logged duration: ${hours} hrs`, 'info');
 
   const record = db.prepare('SELECT * FROM attendance WHERE id = ?').get(existing.id);
   res.json(record);
 });
 
-// Employee: view own attendance
+// Employee: view own attendance (Role security enforced)
 router.get('/me', auth, (req, res) => {
   const { range } = req.query;
   let rows;
@@ -79,10 +79,10 @@ router.get('/me', auth, (req, res) => {
   } else {
     rows = db.prepare('SELECT * FROM attendance WHERE userId = ? ORDER BY date DESC LIMIT 60').all(req.user.id);
   }
-  res.json(rows);
+  res.json(rows || []);
 });
 
-// Admin: view all attendance for a date or specific employee
+// Admin: view all attendance for a date, month, or specific employee (requireAdmin enforced)
 router.get('/', auth, requireAdmin, (req, res) => {
   const { date, userId } = req.query;
   let rows;
@@ -98,7 +98,37 @@ router.get('/', auth, requireAdmin, (req, res) => {
       JOIN users u ON u.id = a.userId
       WHERE a.date = ? ORDER BY u.name`).all(d);
   }
-  res.json(rows);
+  res.json(rows || []);
+});
+
+// Admin: Update / Correct Attendance Record for Employee
+router.put('/:id', auth, requireAdmin, (req, res) => {
+  const { status, checkIn, checkOut, workHours } = req.body;
+  const existing = db.prepare('SELECT * FROM attendance WHERE id = ?').get(req.params.id);
+
+  if (!existing) {
+    return res.status(404).json({ error: 'Attendance record not found' });
+  }
+
+  const finalStatus = status || existing.status;
+  const finalCheckIn = checkIn !== undefined ? checkIn : existing.checkIn;
+  const finalCheckOut = checkOut !== undefined ? checkOut : existing.checkOut;
+  const finalHours = workHours !== undefined ? Number(workHours) : calcHours(finalCheckIn, finalCheckOut);
+
+  db.prepare('UPDATE attendance SET status = ?, checkIn = ?, checkOut = ?, workHours = ? WHERE id = ?')
+    .run(finalStatus, finalCheckIn, finalCheckOut, finalHours, req.params.id);
+
+  // Trigger Real-Time Notification to Employee
+  db.prepare(`INSERT INTO notifications (userId, title, message, type) VALUES (?,?,?,?)`)
+    .run(
+      existing.userId,
+      '⏱️ Attendance Record Updated',
+      `HR Admin updated your attendance record for ${existing.date} to ${finalStatus} (${finalHours} hrs).`,
+      'info'
+    );
+
+  const updated = db.prepare('SELECT * FROM attendance WHERE id = ?').get(req.params.id);
+  res.json(updated);
 });
 
 module.exports = router;

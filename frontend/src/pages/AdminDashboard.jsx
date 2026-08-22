@@ -41,8 +41,11 @@ export default function AdminDashboard() {
     }
   };
 
+  // Real-Time Live Sync Polling Every 3 Seconds
   useEffect(() => {
     load();
+    const interval = setInterval(load, 3000);
+    return () => clearInterval(interval);
   }, [activeToken]);
 
   const handleAddEmployee = async (e) => {
