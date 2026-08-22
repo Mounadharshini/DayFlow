@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../db');
 const { SECRET, auth } = require('../middleware');
+const { sendMail } = require('../mailer');
 
 const router = express.Router();
 
@@ -14,7 +15,7 @@ function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-router.post('/signup', (req, res) => {
+router.post('/signup', async (req, res) => {
   const { employeeId, name, email, password, role } = req.body;
 
   if (!employeeId || !name || !email || !password || !role) {
@@ -41,9 +42,28 @@ router.post('/signup', (req, res) => {
   const info = db.prepare(`INSERT INTO users (employeeId, name, email, password, role, isEmailVerified, otpCode) VALUES (?,?,?,?,?,?,?)`)
     .run(employeeId, name, email, hash, role, 0, otp);
 
-  // Send initial welcome notification
+  // Send initial welcome notification in app
   db.prepare(`INSERT INTO notifications (userId, title, message, type) VALUES (?,?,?,?)`)
-    .run(info.lastInsertRowid, 'Welcome to Dayflow HRMS!', `Your account has been created. Please verify your email with OTP code: ${otp}`, 'info');
+    .run(info.lastInsertRowid, 'Welcome to Dayflow HRMS!', `Your account has been created. Verification OTP code: ${otp}`, 'info');
+
+  // Send real email via Gmail SMTP
+  sendMail({
+    to: email,
+    subject: 'Dayflow HRMS — Welcome & Verification Code',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+        <h2 style="color: #4f46e5; margin-bottom: 4px;">Welcome to Dayflow HRMS!</h2>
+        <p style="color: #64748b; font-size: 14px;">Every workday, perfectly aligned.</p>
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+        <p>Hello <strong>${name}</strong>,</p>
+        <p>Thank you for registering your account (Employee ID: <strong>${employeeId}</strong>). Please use the 6-digit verification code below to verify your email address:</p>
+        <div style="background: #eef2ff; color: #4f46e5; font-size: 28px; font-weight: 800; letter-spacing: 6px; padding: 16px; text-align: center; border-radius: 10px; margin: 20px 0;">
+          ${otp}
+        </div>
+        <p style="font-size: 13px; color: #64748b;">If you did not register for Dayflow HRMS, please ignore this email.</p>
+      </div>
+    `
+  }).catch(() => {});
 
   const user = db.prepare('SELECT id, employeeId, name, email, role, isEmailVerified, phone, address, department, designation, joinDate, salary, basicSalary, hra, allowances, pf, tax, profilePicture, documents, paidLeaveRemaining, sickLeaveRemaining FROM users WHERE id = ?').get(info.lastInsertRowid);
   const token = jwt.sign({ id: user.id, role: user.role, name: user.name, email: user.email }, SECRET, { expiresIn: '7d' });
@@ -65,7 +85,6 @@ router.post('/login', (req, res) => {
   const token = jwt.sign({ id: user.id, role: user.role, name: user.name, email: user.email }, SECRET, { expiresIn: '7d' });
   const { password: _pw, otpCode: _otp, ...safeUser } = user;
 
-  // Parse documents JSON safely
   try {
     safeUser.documents = JSON.parse(safeUser.documents || '[]');
   } catch (e) {
@@ -76,18 +95,37 @@ router.post('/login', (req, res) => {
 });
 
 // Request email verification OTP
-router.post('/verify-send', auth, (req, res) => {
+router.post('/verify-send', async (req, res) => {
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   db.prepare('UPDATE users SET otpCode = ? WHERE id = ?').run(otp, req.user.id);
 
   db.prepare(`INSERT INTO notifications (userId, title, message, type) VALUES (?,?,?,?)`)
     .run(req.user.id, 'Verification Code Sent', `Your email verification OTP is ${otp}`, 'warning');
 
+  const user = db.prepare('SELECT name, email FROM users WHERE id = ?').get(req.user.id);
+
+  // Send real email via Gmail SMTP
+  if (user) {
+    sendMail({
+      to: user.email,
+      subject: 'Dayflow HRMS — Your Verification OTP Code',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+          <h3 style="color: #4f46e5;">Email Verification Request</h3>
+          <p>Hello ${user.name}, your verification OTP code is:</p>
+          <div style="background: #eef2ff; color: #4f46e5; font-size: 28px; font-weight: 800; letter-spacing: 6px; padding: 16px; text-align: center; border-radius: 10px; margin: 20px 0;">
+            ${otp}
+          </div>
+        </div>
+      `
+    }).catch(() => {});
+  }
+
   res.json({ message: 'Verification OTP sent to email', demoOtp: otp });
 });
 
 // Confirm email verification OTP
-router.post('/verify-confirm', auth, (req, res) => {
+router.post('/verify-confirm', (req, res) => {
   const { otp } = req.body;
   const user = db.prepare('SELECT otpCode FROM users WHERE id = ?').get(req.user.id);
   if (!user || user.otpCode !== otp) {

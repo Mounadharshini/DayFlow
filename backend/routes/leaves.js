@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const { auth, requireAdmin } = require('../middleware');
+const { sendMail } = require('../mailer');
 
 const router = express.Router();
 
@@ -12,7 +13,7 @@ function getDaysBetween(start, end) {
 }
 
 // Employee: apply for leave
-router.post('/', auth, (req, res) => {
+router.post('/', async (req, res) => {
   const { type, startDate, endDate, remarks } = req.body;
   if (!type || !startDate || !endDate) {
     return res.status(400).json({ error: 'Leave type, start date and end date are required' });
@@ -26,8 +27,7 @@ router.post('/', auth, (req, res) => {
 
   const daysCount = getDaysBetween(startDate, endDate);
 
-  // Check remaining balances
-  const user = db.prepare('SELECT paidLeaveRemaining, sickLeaveRemaining FROM users WHERE id = ?').get(req.user.id);
+  const user = db.prepare('SELECT paidLeaveRemaining, sickLeaveRemaining, name, email FROM users WHERE id = ?').get(req.user.id);
   if (type === 'Paid' && user.paidLeaveRemaining < daysCount) {
     return res.status(400).json({ error: `Insufficient Paid Leave balance. Requested ${daysCount} days, remaining ${user.paidLeaveRemaining} days.` });
   }
@@ -40,6 +40,20 @@ router.post('/', auth, (req, res) => {
 
   db.prepare(`INSERT INTO notifications (userId, title, message, type) VALUES (?,?,?,?)`)
     .run(req.user.id, 'Leave Request Submitted', `Your ${type} leave request (${startDate} to ${endDate}, ${daysCount} days) is pending approval.`, 'info');
+
+  // Send real email alert to employee and admin
+  sendMail({
+    to: user.email,
+    subject: `Dayflow HRMS — Leave Request Submitted (${type})`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+        <h3 style="color: #4f46e5;">Leave Application Submitted</h3>
+        <p>Hello <strong>${user.name}</strong>,</p>
+        <p>Your request for <strong>${type} Leave</strong> (${daysCount} day(s) from ${startDate} to ${endDate}) has been submitted and is pending HR Admin approval.</p>
+        <p style="font-size: 13px; color: #64748b;">Remarks: ${remarks || 'None'}</p>
+      </div>
+    `
+  }).catch(() => {});
 
   const leave = db.prepare('SELECT * FROM leaves WHERE id = ?').get(info.lastInsertRowid);
   res.status(201).json(leave);
@@ -71,7 +85,7 @@ router.get('/', auth, requireAdmin, (req, res) => {
 });
 
 // Admin: approve or reject
-router.put('/:id', auth, requireAdmin, (req, res) => {
+router.put('/:id', auth, requireAdmin, async (req, res) => {
   const { status, adminComment } = req.body;
   if (!['Approved', 'Rejected'].includes(status)) {
     return res.status(400).json({ error: 'Status must be Approved or Rejected' });
@@ -79,20 +93,19 @@ router.put('/:id', auth, requireAdmin, (req, res) => {
   const leave = db.prepare('SELECT * FROM leaves WHERE id = ?').get(req.params.id);
   if (!leave) return res.status(404).json({ error: 'Leave request not found' });
 
+  const emp = db.prepare('SELECT name, email, paidLeaveRemaining, sickLeaveRemaining FROM users WHERE id = ?').get(leave.userId);
+
   db.prepare('UPDATE leaves SET status = ?, adminComment = ? WHERE id = ?').run(status, adminComment || '', req.params.id);
 
   if (status === 'Approved') {
-    // Update balances
-    const user = db.prepare('SELECT paidLeaveRemaining, sickLeaveRemaining FROM users WHERE id = ?').get(leave.userId);
     if (leave.type === 'Paid') {
-      const newBal = Math.max(0, user.paidLeaveRemaining - leave.daysCount);
+      const newBal = Math.max(0, emp.paidLeaveRemaining - leave.daysCount);
       db.prepare('UPDATE users SET paidLeaveRemaining = ? WHERE id = ?').run(newBal, leave.userId);
     } else if (leave.type === 'Sick') {
-      const newBal = Math.max(0, user.sickLeaveRemaining - leave.daysCount);
+      const newBal = Math.max(0, emp.sickLeaveRemaining - leave.daysCount);
       db.prepare('UPDATE users SET sickLeaveRemaining = ? WHERE id = ?').run(newBal, leave.userId);
     }
 
-    // Mark attendance as 'Leave'
     const start = new Date(leave.startDate);
     const end = new Date(leave.endDate);
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
@@ -107,9 +120,39 @@ router.put('/:id', auth, requireAdmin, (req, res) => {
 
     db.prepare(`INSERT INTO notifications (userId, title, message, type) VALUES (?,?,?,?)`)
       .run(leave.userId, 'Leave Approved 🎉', `Your ${leave.type} leave request (${leave.startDate} to ${leave.endDate}) has been approved!`, 'success');
+
+    if (emp) {
+      sendMail({
+        to: emp.email,
+        subject: `Dayflow HRMS — Leave Request Approved! 🎉`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+            <h3 style="color: #10b981;">Leave Approved 🎉</h3>
+            <p>Hello <strong>${emp.name}</strong>,</p>
+            <p>Your <strong>${leave.type} Leave</strong> request from <strong>${leave.startDate}</strong> to <strong>${leave.endDate}</strong> (${leave.daysCount} day(s)) has been approved by HR Admin.</p>
+            ${adminComment ? `<p style="background: #f8fafc; padding: 12px; border-radius: 8px; font-size: 13px;">HR Comment: ${adminComment}</p>` : ''}
+          </div>
+        `
+      }).catch(() => {});
+    }
   } else {
     db.prepare(`INSERT INTO notifications (userId, title, message, type) VALUES (?,?,?,?)`)
       .run(leave.userId, 'Leave Request Rejected', `Your ${leave.type} leave request (${leave.startDate} to ${leave.endDate}) was rejected. ${adminComment ? 'Reason: ' + adminComment : ''}`, 'danger');
+
+    if (emp) {
+      sendMail({
+        to: emp.email,
+        subject: `Dayflow HRMS — Leave Request Decision`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+            <h3 style="color: #ef4444;">Leave Request Rejected</h3>
+            <p>Hello <strong>${emp.name}</strong>,</p>
+            <p>Your <strong>${leave.type} Leave</strong> request from <strong>${leave.startDate}</strong> to <strong>${leave.endDate}</strong> was not approved.</p>
+            ${adminComment ? `<p style="background: #fee2e2; color: #b91c1c; padding: 12px; border-radius: 8px; font-size: 13px;">HR Reason: ${adminComment}</p>` : ''}
+          </div>
+        `
+      }).catch(() => {});
+    }
   }
 
   const updated = db.prepare('SELECT * FROM leaves WHERE id = ?').get(req.params.id);

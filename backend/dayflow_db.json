@@ -159,7 +159,7 @@
       "pf": 3600,
       "tax": 6000,
       "isEmailVerified": 0,
-      "otpCode": "724444",
+      "otpCode": "998971",
       "documents": [],
       "profilePicture": "",
       "paidLeaveRemaining": 12,
@@ -600,6 +600,15 @@
       "type": "info",
       "isRead": 0,
       "createdAt": "2026-08-22T04:25:25.599Z"
+    },
+    {
+      "id": 7,
+      "userId": 6,
+      "title": "Verification Code Sent",
+      "message": "Your email verification OTP is 998971",
+      "type": "warning",
+      "isRead": 0,
+      "createdAt": "2026-08-22T04:32:46.425Z"
     }
   ]
 }
