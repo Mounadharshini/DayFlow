@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Shield, ArrowRight, Lock, Mail, Eye, EyeOff, CheckCircle2, Sparkles, KeyRound, RefreshCw } from 'lucide-react';
+import { Shield, ArrowRight, Lock, Mail, Eye, EyeOff, CheckCircle2, Sparkles, KeyRound, RefreshCw, ArrowLeft } from 'lucide-react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
@@ -123,13 +123,17 @@ export default function Login() {
       {/* Left Column: Espresso & Mocha SaaS Hero */}
       <div className="auth-hero-section">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 40 }}>
-            <span className="logo-badge">EV</span>
-            <span style={{ fontSize: 24, fontWeight: 800, color: 'white', letterSpacing: '-0.5px' }}>ElyVia</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 36 }}>
+            <img 
+              src="/elyvia-logo.jpg" 
+              alt="ElyVia Logo" 
+              style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #cc9966', boxShadow: '0 2px 10px rgba(204,153,102,0.4)' }} 
+            />
+            <span className="brand-name" style={{ fontSize: 24 }}>ElyVia HRMS</span>
           </div>
 
           <div style={{ background: 'rgba(255, 244, 194, 0.15)', border: '1px solid rgba(255, 244, 194, 0.3)', padding: '6px 14px', borderRadius: 999, display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#fff4c2', marginBottom: 24 }}>
-            <Sparkles size={15} /> Next-Gen HR Operating System
+            <Sparkles size={15} /> Enterprise Workforce Portal
           </div>
 
           <h1 style={{ fontSize: 38, fontWeight: 800, lineHeight: 1.25, letterSpacing: '-0.02em', marginBottom: 16 }}>
@@ -145,23 +149,23 @@ export default function Login() {
         </div>
 
         {/* Hero Features List */}
-        <div style={{ margin: '40px 0' }}>
+        <div style={{ margin: '36px 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, color: '#fff4c2', fontSize: 14, fontWeight: 600 }}>
-            <CheckCircle2 size={18} color="#cc9966" /> Automated Work Hours & Real-time Check-In
+            <CheckCircle2 size={18} color="#cc9966" /> Automated Work Hours &amp; Real-time Check-In
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, color: '#fff4c2', fontSize: 14, fontWeight: 600 }}>
-            <CheckCircle2 size={18} color="#cc9966" /> Real Email OTP & Gmail Notification Alerts
+            <CheckCircle2 size={18} color="#cc9966" /> Real Email OTP &amp; Gmail Notification Alerts
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: '#fff4c2', fontSize: 14, fontWeight: 600 }}>
-            <CheckCircle2 size={18} color="#cc9966" /> Official PDF Paystubs & 360° Employee Inspector
+            <CheckCircle2 size={18} color="#cc9966" /> Official PDF Paystubs &amp; 360° Employee Inspector
           </div>
         </div>
 
-        <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: 24 }}>
+        <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: 20 }}>
           <p style={{ fontSize: 13, color: '#d1c1b5', fontStyle: 'italic' }}>
-            "ElyVia transformed our HR operations, cutting leave processing time down to seconds."
+            "ElyVia HRMS transformed our HR operations, cutting leave processing time down to seconds."
           </p>
-          <div style={{ fontSize: 12, color: '#fff4c2', fontWeight: 700, marginTop: 8 }}>
+          <div style={{ fontSize: 12, color: '#fff4c2', fontWeight: 700, marginTop: 6 }}>
             — Operations Director, Enterprise HR
           </div>
         </div>
@@ -169,14 +173,21 @@ export default function Login() {
 
       {/* Right Column: Dynamic Credentials Form vs OTP Verification */}
       <div className="auth-form-section">
+        {/* Back to Home Link */}
+        <div style={{ marginBottom: 20 }}>
+          <Link to="/" style={{ fontSize: 13, fontWeight: 700, color: '#b37a4c', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <ArrowLeft size={15} /> Back to Home Landing Page
+          </Link>
+        </div>
+
         {step === 'credentials' ? (
           <>
-            <div style={{ marginBottom: 32 }}>
+            <div style={{ marginBottom: 28 }}>
               <h2 style={{ fontSize: 28, fontWeight: 800, color: '#2b1b12', letterSpacing: '-0.5px' }}>Sign in to ElyVia</h2>
               <p className="muted" style={{ marginTop: 4 }}>Enter your credentials to access your portal</p>
             </div>
 
-            {/* Direct Normal Google Sign-In (NO OTP NEEDED!) */}
+            {/* Direct Normal Google Sign-In */}
             <button type="button" className="btn-google" onClick={() => triggerGoogleSignIn()} disabled={loading}>
               <svg width="20" height="20" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -207,9 +218,9 @@ export default function Login() {
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 }}>
                 <label style={{ margin: 0 }}>Password</label>
-                <span style={{ fontSize: 12, color: '#b37a4c', fontWeight: 600, cursor: 'pointer' }} onClick={() => alert('Demo Password reset code sent to your email!')}>
+                <Link to="/forgot-password" style={{ fontSize: 12, color: '#b37a4c', fontWeight: 600, textDecoration: 'none' }}>
                   Forgot password?
-                </span>
+                </Link>
               </div>
 
               <div style={{ position: 'relative', marginTop: 6 }}>
@@ -247,7 +258,7 @@ export default function Login() {
               {error && <div className="error-msg">{error}</div>}
 
               <button className="btn-primary" type="submit" disabled={loading} style={{ marginTop: 24 }}>
-                {loading ? 'Sending OTP Email...' : <>Sign In & Send OTP <ArrowRight size={16} /></>}
+                {loading ? 'Sending OTP Email...' : <>Sign In &amp; Send OTP <ArrowRight size={16} /></>}
               </button>
             </form>
 
@@ -303,13 +314,13 @@ export default function Login() {
               {error && <div className="error-msg" style={{ textAlign: 'center' }}>{error}</div>}
 
               <button className="btn-primary" type="submit" disabled={loading} style={{ marginTop: 24 }}>
-                {loading ? 'Verifying OTP Code...' : <>Verify OTP & Enter Portal <CheckCircle2 size={16} /></>}
+                {loading ? 'Verifying OTP Code...' : <>Verify OTP &amp; Enter Portal <CheckCircle2 size={16} /></>}
               </button>
             </form>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, paddingTop: 16, borderTop: '1px solid #eee5d8' }}>
               <button type="button" className="btn-secondary btn-sm" onClick={() => setStep('credentials')} style={{ fontSize: 12 }}>
-                &larr; Back to Email & Password
+                &larr; Back to Email &amp; Password
               </button>
 
               <button type="button" className="btn-secondary btn-sm" onClick={handleResendLoginOtp} disabled={resending} style={{ fontSize: 12, gap: 6 }}>

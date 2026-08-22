@@ -8,46 +8,50 @@ import { useAuth } from '../AuthContext';
 import { getAvatarUrl } from '../utils/avatar';
 
 export default function Sidebar() {
-  const { user, logout } = useAuth();
+  const { auth, user, logout } = useAuth();
+  const activeUser = user || auth?.user;
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  const isAdmin = user?.role === 'Admin';
+  const isAdmin = activeUser?.role === 'Admin';
 
   const employeeLinks = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/profile', label: 'My Profile', icon: User },
     { to: '/attendance', label: 'Attendance', icon: Calendar },
     { to: '/leaves', label: 'Leave Requests', icon: FileCheck },
-    { to: '/payroll', label: 'Salary / Payroll', icon: CreditCard },
+    { to: '/payroll', label: 'Payroll', icon: CreditCard },
     { to: '/notifications', label: 'Notifications', icon: Bell },
   ];
 
   const adminLinks = [
-    { to: '/admin', label: 'HR Control Center', icon: ShieldCheck },
-    { to: '/admin/attendance', label: 'Workforce Attendance', icon: Calendar },
+    { to: '/admin', label: 'Dashboard', icon: ShieldCheck },
+    { to: '/admin/employees', label: 'Employees', icon: Users },
+    { to: '/admin/attendance', label: 'Attendance', icon: Calendar },
     { to: '/admin/leaves', label: 'Leave Approvals', icon: FileCheck },
-    { to: '/analytics', label: 'Reports & Analytics', icon: BarChart3 },
+    { to: '/admin/payroll', label: 'Payroll', icon: CreditCard },
+    { to: '/analytics', label: 'Reports / Analytics', icon: BarChart3 },
+    { to: '/notifications', label: 'Notifications', icon: Bell },
   ];
 
   const handleLogout = () => {
     setShowLogoutModal(false);
     logout();
-    navigate('/login');
+    navigate('/');
   };
 
-  const avatarUrl = getAvatarUrl(user);
+  const avatarUrl = getAvatarUrl(activeUser);
 
   return (
     <>
       {/* Mobile Top Navbar Header */}
       <div className="mobile-navbar">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span className="logo-badge" style={{ padding: '4px 8px', fontSize: 14 }}>EV</span>
-          <span style={{ fontWeight: 800, fontSize: 18, color: 'white' }}>ElyVia HRMS</span>
+          <img src="/elyvia-logo.jpg" alt="ElyVia Logo" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', border: '1px solid #cc9966' }} />
+          <span className="brand-name" style={{ fontSize: 18 }}>ElyVia HRMS</span>
         </div>
         <button 
           onClick={() => setMobileOpen(!mobileOpen)} 
@@ -65,10 +69,14 @@ export default function Sidebar() {
         {/* Sidebar Brand Header */}
         <div className="sidebar-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, overflow: 'hidden' }}>
-            <span className="logo-badge" style={{ padding: '6px 10px', fontSize: 16 }}>EV</span>
+            <img 
+              src="/elyvia-logo.jpg" 
+              alt="ElyVia Logo" 
+              style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #cc9966', boxShadow: '0 2px 8px rgba(204,153,102,0.4)', flexShrink: 0 }} 
+            />
             {!collapsed && (
               <div>
-                <span style={{ fontSize: 20, fontWeight: 800, color: 'white', letterSpacing: '-0.5px' }}>ElyVia</span>
+                <span className="brand-name" style={{ fontSize: 20 }}>ElyVia</span>
                 <span style={{ fontSize: 10, color: '#cc9966', fontWeight: 800, marginLeft: 6, letterSpacing: '0.08em' }}>HRMS</span>
               </div>
             )}
@@ -94,48 +102,46 @@ export default function Sidebar() {
 
         {/* Navigation Sections */}
         <nav className="sidebar-nav">
-          {!collapsed && <div className="nav-section-label">MAIN WORKSPACE</div>}
-          {employeeLinks.map(link => {
-            const Icon = link.icon;
-            const isActive = location.pathname === link.to;
-            return (
-              <NavLink 
-                key={link.to} 
-                to={link.to} 
-                className={isActive ? 'active' : ''}
-                onClick={() => setMobileOpen(false)}
-                title={collapsed ? link.label : ''}
-              >
-                <Icon size={18} />
-                {!collapsed && <span>{link.label}</span>}
-              </NavLink>
-            );
-          })}
-
-          {isAdmin && (
-            <>
-              {!collapsed && <div className="nav-section-label" style={{ marginTop: 14 }}>ADMIN MANAGEMENT</div>}
-              {adminLinks.map(link => {
-                const Icon = link.icon;
-                const isActive = location.pathname === link.to;
-                return (
-                  <NavLink 
-                    key={link.to} 
-                    to={link.to} 
-                    className={isActive ? 'active' : ''}
-                    onClick={() => setMobileOpen(false)}
-                    title={collapsed ? link.label : ''}
-                  >
-                    <Icon size={18} />
-                    {!collapsed && <span>{link.label}</span>}
-                  </NavLink>
-                );
-              })}
-            </>
+          {!collapsed && <div className="nav-section-label">{isAdmin ? 'ADMIN MANAGEMENT' : 'EMPLOYEE MENU'}</div>}
+          
+          {!isAdmin ? (
+            employeeLinks.map(link => {
+              const Icon = link.icon;
+              const isActive = location.pathname === link.to;
+              return (
+                <NavLink 
+                  key={link.to} 
+                  to={link.to} 
+                  className={isActive ? 'active' : ''}
+                  onClick={() => setMobileOpen(false)}
+                  title={collapsed ? link.label : ''}
+                >
+                  <Icon size={18} />
+                  {!collapsed && <span>{link.label}</span>}
+                </NavLink>
+              );
+            })
+          ) : (
+            adminLinks.map(link => {
+              const Icon = link.icon;
+              const isActive = location.pathname === link.to;
+              return (
+                <NavLink 
+                  key={link.to} 
+                  to={link.to} 
+                  className={isActive ? 'active' : ''}
+                  onClick={() => setMobileOpen(false)}
+                  title={collapsed ? link.label : ''}
+                >
+                  <Icon size={18} />
+                  {!collapsed && <span>{link.label}</span>}
+                </NavLink>
+              );
+            })
           )}
         </nav>
 
-        {/* Bottom Employee Profile Snippet & Logout */}
+        {/* Bottom Profile Snippet & Logout */}
         <div className="sidebar-footer" style={{ justifyContent: collapsed ? 'center' : 'space-between' }}>
           {!collapsed ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflow: 'hidden' }}>
@@ -145,8 +151,8 @@ export default function Sidebar() {
                 style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #cc9966' }}
               />
               <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'white' }}>{user?.name || 'Employee'}</div>
-                <div style={{ fontSize: 11, color: '#cc9966', fontWeight: 600 }}>{user?.employeeId || 'EMP-101'}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'white' }}>{activeUser?.name || 'Employee'}</div>
+                <div style={{ fontSize: 11, color: '#cc9966', fontWeight: 600 }}>{activeUser?.employeeId || 'EMP-101'}</div>
               </div>
             </div>
           ) : (

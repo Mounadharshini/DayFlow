@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users, Search, Edit3, ShieldCheck, CreditCard, Eye } from 'lucide-react';
+import { Users, Search, Edit3, ShieldCheck, CreditCard, Eye, UserPlus, X, CheckCircle2 } from 'lucide-react';
 import EmployeeSwitcherModal from '../components/EmployeeSwitcherModal';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
@@ -7,7 +7,8 @@ import { useToast } from '../components/Toast';
 import { getAvatarUrl } from '../utils/avatar';
 
 export default function AdminDashboard() {
-  const { token } = useAuth();
+  const { auth, token } = useAuth();
+  const activeToken = token || auth?.token;
   const { showToast } = useToast();
 
   const [employees, setEmployees] = useState([]);
@@ -16,11 +17,24 @@ export default function AdminDashboard() {
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
   const [showInspector, setShowInspector] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  // New Employee Form State
+  const [newEmp, setNewEmp] = useState({
+    employeeId: `EMP-${Math.floor(100 + Math.random() * 900)}`,
+    name: '',
+    email: '',
+    password: '',
+    role: 'Employee',
+    department: 'Engineering & Technology',
+    designation: 'Software Specialist',
+    salary: 60000
+  });
 
   const load = async () => {
-    if (!token) return;
+    if (!activeToken) return;
     try {
-      const data = await api.getAllEmployees(token);
+      const data = await api.getAllEmployees(activeToken);
       setEmployees(data || []);
     } catch (e) {
       console.error(e);
@@ -29,7 +43,41 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     load();
-  }, [token]);
+  }, [activeToken]);
+
+  const handleAddEmployee = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await api.signup({
+        employeeId: newEmp.employeeId,
+        email: newEmp.email,
+        password: newEmp.password || 'Emp@123456',
+        name: newEmp.name,
+        role: newEmp.role,
+        department: newEmp.department,
+        designation: newEmp.designation,
+        salary: Number(newEmp.salary)
+      });
+      showToast(`New employee account created for ${newEmp.name}`, 'success');
+      setShowAddModal(false);
+      setNewEmp({
+        employeeId: `EMP-${Math.floor(100 + Math.random() * 900)}`,
+        name: '',
+        email: '',
+        password: '',
+        role: 'Employee',
+        department: 'Engineering & Technology',
+        designation: 'Software Specialist',
+        salary: 60000
+      });
+      await load();
+    } catch (err) {
+      showToast(err.message || 'Failed to create employee', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const startEdit = (emp) => {
     setEditingId(emp.id);
@@ -52,7 +100,7 @@ export default function AdminDashboard() {
   const handleSave = async (id) => {
     setSaving(true);
     try {
-      await api.updateEmployee(token, id, form);
+      await api.updateEmployee(activeToken, id, form);
       setEditingId(null);
       showToast('Employee profile and role permissions updated!', 'success');
       await load();
@@ -65,8 +113,8 @@ export default function AdminDashboard() {
 
   const filtered = employees.filter(
     (e) =>
-      e.name.toLowerCase().includes(search.toLowerCase()) ||
-      e.employeeId.toLowerCase().includes(search.toLowerCase()) ||
+      (e.name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (e.employeeId || '').toLowerCase().includes(search.toLowerCase()) ||
       (e.department || '').toLowerCase().includes(search.toLowerCase())
   );
 
@@ -77,6 +125,76 @@ export default function AdminDashboard() {
     <div className="container" style={{ paddingBottom: 60 }}>
       {showInspector && <EmployeeSwitcherModal onClose={() => setShowInspector(false)} />}
 
+      {/* Add Employee Modal */}
+      {showAddModal && (
+        <div className="modal-backdrop" onClick={() => setShowAddModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 540 }}>
+            <div className="modal-header">
+              <div>
+                <h3 style={{ fontSize: 20, fontWeight: 800, color: '#2b1b12' }}>Add New Employee</h3>
+                <p className="muted" style={{ fontSize: 13, marginTop: 2 }}>Create a new employee account directly in MySQL database</p>
+              </div>
+              <button className="close-btn" onClick={() => setShowAddModal(false)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddEmployee}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label>Employee ID</label>
+                  <input value={newEmp.employeeId} onChange={(e) => setNewEmp({ ...newEmp, employeeId: e.target.value })} required />
+                </div>
+                <div>
+                  <label>Role</label>
+                  <select value={newEmp.role} onChange={(e) => setNewEmp({ ...newEmp, role: e.target.value })}>
+                    <option value="Employee">Employee</option>
+                    <option value="Admin">HR Admin 👑</option>
+                  </select>
+                </div>
+              </div>
+
+              <label>Full Employee Name</label>
+              <input value={newEmp.name} onChange={(e) => setNewEmp({ ...newEmp, name: e.target.value })} placeholder="John Doe" required />
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 4 }}>
+                <div>
+                  <label>Work Email</label>
+                  <input type="email" value={newEmp.email} onChange={(e) => setNewEmp({ ...newEmp, email: e.target.value })} placeholder="john@company.com" required />
+                </div>
+                <div>
+                  <label>Initial Password</label>
+                  <input type="password" value={newEmp.password} onChange={(e) => setNewEmp({ ...newEmp, password: e.target.value })} placeholder="Emp@123456" required />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 4 }}>
+                <div>
+                  <label>Department</label>
+                  <input value={newEmp.department} onChange={(e) => setNewEmp({ ...newEmp, department: e.target.value })} />
+                </div>
+                <div>
+                  <label>Designation</label>
+                  <input value={newEmp.designation} onChange={(e) => setNewEmp({ ...newEmp, designation: e.target.value })} />
+                </div>
+              </div>
+
+              <label>Annual Salary (₹)</label>
+              <input type="number" value={newEmp.salary} onChange={(e) => setNewEmp({ ...newEmp, salary: e.target.value })} required />
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 24 }}>
+                <button type="button" className="btn-secondary" onClick={() => setShowAddModal(false)}>
+                  Cancel
+                </button>
+                <button className="btn-primary" type="submit" disabled={saving} style={{ width: 'auto', background: 'linear-gradient(135deg, #b37a4c 0%, #9c6137 100%)' }}>
+                  {saving ? 'Creating...' : 'Create Employee Record'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Header Banner */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
         <div>
@@ -85,16 +203,26 @@ export default function AdminDashboard() {
             Manage employee records, promote staff to HR Admin, and inspect organization salary structures
           </p>
         </div>
-        <button 
-          className="btn-primary btn-sm" 
-          onClick={() => setShowInspector(true)} 
-          style={{ background: 'linear-gradient(135deg, #b37a4c 0%, #9c6137 100%)', padding: '10px 20px', gap: 8 }}
-        >
-          <Eye size={16} /> Open 360° Employee Inspector
-        </button>
+
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button 
+            className="btn-primary btn-sm" 
+            onClick={() => setShowAddModal(true)} 
+            style={{ gap: 6, padding: '7px 16px', fontSize: 13, background: 'linear-gradient(135deg, #b37a4c 0%, #9c6137 100%)' }}
+          >
+            <UserPlus size={15} /> Add Employee
+          </button>
+          <button 
+            className="btn-secondary btn-sm" 
+            onClick={() => setShowInspector(true)} 
+            style={{ gap: 6, padding: '7px 14px', fontSize: 13 }}
+          >
+            <Eye size={15} /> 360° Inspector
+          </button>
+        </div>
       </div>
 
-      {/* HR Key Metrics Bar (COMPACT INLINE STAT BAR - NO CARD OVERLOAD) */}
+      {/* HR Key Metrics Bar */}
       <div style={{
         background: '#ffffff',
         border: '1px solid #eee5d8',

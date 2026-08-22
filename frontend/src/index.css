@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@700;800;900&family=Plus+Jakarta Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
   /* Strict Cream and Brown Color Palette */
@@ -41,6 +41,7 @@
   --shadow-md: 0 4px 14px -2px rgb(35 23 16 / 0.06);
   --shadow-lg: 0 16px 32px -4px rgb(35 23 16 / 0.10);
   --font: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-brand: 'Outfit', 'Plus Jakarta Sans', sans-serif;
 }
 
 * {
@@ -62,6 +63,70 @@ a {
   text-decoration: none;
 }
 
+/* Stylish Animations & Gold Glitter Effects */
+@keyframes goldShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.85; transform: scale(1); filter: drop-shadow(0 0 2px rgba(212, 175, 55, 0.4)); }
+  50% { opacity: 1; transform: scale(1.08); filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.8)); }
+}
+
+@keyframes subtleFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.shimmer-text {
+  background: linear-gradient(90deg, #fff4c2 0%, #ffffff 25%, #d4af37 50%, #ffffff 75%, #fff4c2 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: goldShimmer 5s linear infinite;
+}
+
+.glitter-sparkle {
+  animation: pulseGlow 2.5s ease-in-out infinite;
+}
+
+.float-effect {
+  animation: subtleFloat 3s ease-in-out infinite;
+}
+
+.brand-name {
+  font-family: var(--font-brand);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  font-size: 24px;
+  color: #ffffff;
+  background: linear-gradient(90deg, #ffffff 0%, #fff4c2 40%, #e2c074 70%, #ffffff 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: goldShimmer 6s linear infinite;
+}
+
+.logo-badge {
+  background: linear-gradient(135deg, #cc9966 0%, #b37a4c 50%, #9c6137 100%);
+  color: #fff4c2;
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-family: var(--font-brand);
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  box-shadow: 0 4px 12px rgba(179, 122, 76, 0.35);
+  border: 1px solid rgba(255, 244, 194, 0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.logo-badge:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 16px rgba(212, 175, 55, 0.6);
+}
+
 /* App Main Layout with Left Sidebar */
 .app-layout {
   display: flex;
@@ -78,7 +143,6 @@ a {
   flex-direction: column;
 }
 
-/* FULL-PAGE EXPANSIVE CANVAS (No tight narrow box constraining!) */
 .container {
   width: 100%;
   max-width: 1600px;
@@ -310,12 +374,14 @@ button {
   padding: 12px 20px;
   width: 100%;
   box-shadow: 0 4px 14px rgba(179, 122, 76, 0.35);
+  position: relative;
+  overflow: hidden;
 }
 
 .btn-primary:hover {
   opacity: 0.95;
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(179, 122, 76, 0.45);
+  box-shadow: 0 6px 18px rgba(179, 122, 76, 0.5);
 }
 
 .btn-secondary {
@@ -421,12 +487,13 @@ button {
   padding: 28px;
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-sm);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .card:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
+  border-color: #cc9966;
 }
 
 .card-header-icon {

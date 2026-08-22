@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Bell, Search, User, LogOut, ChevronDown, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
+import { Bell, Search, User, LogOut, ChevronDown, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 import { api } from '../api';
 import { getAvatarUrl } from '../utils/avatar';
 
 export default function Navbar() {
-  const { user, token, logout } = useAuth();
+  const { auth, token, user, logout } = useAuth();
+  const activeToken = token || auth?.token;
+  const activeUser = user || auth?.user;
+
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -24,8 +27,10 @@ export default function Navbar() {
       case '/payroll': return 'Salary & Paystubs';
       case '/notifications': return 'Notifications Center';
       case '/admin': return 'HR Control Center';
+      case '/admin/employees': return 'Employee Directory';
       case '/admin/attendance': return 'Workforce Attendance';
       case '/admin/leaves': return 'Leave Approvals';
+      case '/admin/payroll': return 'Payroll Administration';
       case '/analytics': return 'Reports & Analytics';
       default: return 'Workspace';
     }
@@ -34,29 +39,33 @@ export default function Navbar() {
   const title = getPageTitle(location.pathname);
 
   const fetchNotifs = async () => {
-    if (!token) return;
+    if (!activeToken) return;
     try {
-      const data = await api.getNotifications(token);
-      setNotifications(data || []);
-    } catch (e) {}
+      const data = await api.getNotifications(activeToken);
+      setNotifications(Array.isArray(data) ? data : []);
+    } catch (e) {
+      setNotifications([]);
+    }
   };
 
   useEffect(() => {
     fetchNotifs();
     const interval = setInterval(fetchNotifs, 15000);
     return () => clearInterval(interval);
-  }, [token]);
+  }, [activeToken]);
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const notifList = Array.isArray(notifications) ? notifications : [];
+  const unreadCount = notifList.filter(n => n && !n.isRead).length;
 
   const handleMarkAllRead = async () => {
+    if (!activeToken) return;
     try {
-      await api.markNotificationsRead(token);
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      await api.markNotificationsRead(activeToken);
+      setNotifications(prev => (Array.isArray(prev) ? prev : []).map(n => ({ ...n, isRead: true })));
     } catch (e) {}
   };
 
-  const avatarUrl = getAvatarUrl(user);
+  const avatarUrl = getAvatarUrl(activeUser);
 
   return (
     <header style={{ 
@@ -124,9 +133,9 @@ export default function Navbar() {
               </div>
 
               <div style={{ maxHeight: 280, overflowY: 'auto' }}>
-                {notifications.length > 0 ? (
-                  notifications.slice(0, 4).map(n => (
-                    <div key={n.id} className={`notif-item ${!n.isRead ? 'unread' : ''}`}>
+                {notifList.length > 0 ? (
+                  notifList.slice(0, 4).map(n => (
+                    <div key={n.id || Math.random()} className={`notif-item ${!n.isRead ? 'unread' : ''}`}>
                       <div style={{ background: n.type === 'success' ? '#9c6137' : '#b37a4c', color: 'white', width: 26, height: 26, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <CheckCircle2 size={14} />
                       </div>
@@ -168,8 +177,8 @@ export default function Navbar() {
               style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', border: '2px solid #cc9966' }}
             />
             <div className="desktop-only" style={{ textAlign: 'left' }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'white' }}>{user?.name || 'Employee'}</div>
-              <div style={{ fontSize: 11, color: '#cc9966', fontWeight: 600 }}>{user?.role === 'Admin' ? 'HR Admin 👑' : 'Employee Access'}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'white' }}>{activeUser?.name || 'MOUNADHARSHINI VIMALRAJ'}</div>
+              <div style={{ fontSize: 11, color: '#cc9966', fontWeight: 600 }}>{activeUser?.role === 'Admin' ? 'HR Admin 👑' : 'Employee Access'}</div>
             </div>
             <ChevronDown size={14} color="#cc9966" />
           </div>
@@ -195,10 +204,10 @@ export default function Navbar() {
                 <User size={15} color="#b37a4c" /> My Profile
               </Link>
               <div 
-                onClick={() => { setShowProfileDropdown(false); logout(); navigate('/login'); }}
+                onClick={() => { setShowProfileDropdown(false); logout(); navigate('/'); }}
                 style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10, color: '#dc2626', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
               >
-                <LogOut size={15} /> Logout
+                <LogOut size={15} /> Sign Out
               </div>
             </div>
           )}

@@ -1,21 +1,23 @@
 import { useEffect, useState } from 'react';
-import { User, Phone, MapPin, Briefcase, DollarSign, FileText, Upload, Trash2, Edit3, Mail, Hash, Building, CalendarCheck, ShieldCheck } from 'lucide-react';
+import { User, Phone, MapPin, Briefcase, DollarSign, FileText, Upload, Trash2, Edit3, Mail, Hash, Building } from 'lucide-react';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
 import { useToast } from '../components/Toast';
 import { getAvatarUrl } from '../utils/avatar';
 
 export default function Profile() {
-  const { token, user, login } = useAuth();
+  const { auth, token, user, login } = useAuth();
+  const activeToken = token || auth?.token;
+  const activeUser = user || auth?.user;
   const { showToast } = useToast();
 
-  const [profile, setProfile] = useState(user || null);
+  const [profile, setProfile] = useState(activeUser || null);
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'job' | 'salary' | 'documents'
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ 
-    phone: user?.phone || '', 
-    address: user?.address || '', 
-    profilePicture: user?.profilePicture || '' 
+    phone: activeUser?.phone || '', 
+    address: activeUser?.address || '', 
+    profilePicture: activeUser?.profilePicture || '' 
   });
   const [docName, setDocName] = useState('');
   const [docType, setDocType] = useState('Contract');
@@ -23,10 +25,10 @@ export default function Profile() {
   const [error, setError] = useState('');
 
   const loadProfile = async () => {
-    if (!token) return;
+    if (!activeToken) return;
     try {
-      const p = await api.getMyProfile(token);
-      if (p) {
+      const p = await api.getMyProfile(activeToken);
+      if (p && p.name) {
         setProfile(p);
         setForm({ 
           phone: p.phone || '', 
@@ -40,26 +42,26 @@ export default function Profile() {
   };
 
   useEffect(() => {
-    if (user) {
-      setProfile(user);
+    if (activeUser) {
+      setProfile(activeUser);
       setForm({ 
-        phone: user.phone || '', 
-        address: user.address || '', 
-        profilePicture: user.profilePicture || '' 
+        phone: activeUser.phone || '', 
+        address: activeUser.address || '', 
+        profilePicture: activeUser.profilePicture || '' 
       });
     }
     loadProfile();
-  }, [token]);
+  }, [activeToken, activeUser]);
 
   const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true);
     setError('');
     try {
-      const updated = await api.updateMyProfile(token, form);
+      const updated = await api.updateMyProfile(activeToken, form);
       setProfile(updated);
       // Persist in AuthContext session as well
-      login(token, updated);
+      login(activeToken, updated);
       setEditing(false);
       showToast('Profile updated successfully', 'success');
     } catch (err) {
@@ -74,7 +76,7 @@ export default function Profile() {
     e.preventDefault();
     if (!docName.trim()) return;
     try {
-      const updatedDocs = await api.addDocument(token, { name: docName.trim(), type: docType });
+      const updatedDocs = await api.addDocument(activeToken, { name: docName.trim(), type: docType });
       setDocName('');
       setProfile(prev => ({ ...prev, documents: updatedDocs }));
       showToast('Personnel document attached successfully', 'success');
@@ -86,7 +88,7 @@ export default function Profile() {
 
   const handleDeleteDoc = async (docId) => {
     try {
-      const updatedDocs = await api.deleteDocument(token, docId);
+      const updatedDocs = await api.deleteDocument(activeToken, docId);
       setProfile(prev => ({ ...prev, documents: updatedDocs }));
       showToast('Personnel document removed', 'info');
     } catch (err) {
@@ -95,7 +97,7 @@ export default function Profile() {
     }
   };
 
-  const currentProfile = profile || user || {};
+  const currentProfile = profile || activeUser || {};
   const avatarUrl = getAvatarUrl(currentProfile);
   const docCount = currentProfile.documents?.length || 0;
 
@@ -119,16 +121,16 @@ export default function Profile() {
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
               <h1 style={{ fontSize: 28, fontWeight: 800, color: 'white', margin: 0 }}>
-                {currentProfile.name || 'Employee Profile'}
+                {currentProfile.name || 'MOUNADHARSHINI VIMALRAJ'}
               </h1>
               <span className="badge badge-present" style={{ background: '#fff4c2', color: '#9c6137', fontSize: 12 }}>
                 {currentProfile.role === 'Admin' ? 'HR Administrator 👑' : 'Active Employee'}
               </span>
             </div>
             <div style={{ fontSize: 14, color: '#d1c1b5', marginTop: 6, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-              <span><Briefcase size={14} style={{ display: 'inline', marginRight: 4 }} /> {currentProfile.designation || 'Staff Member'}</span>
+              <span><Briefcase size={14} style={{ display: 'inline', marginRight: 4 }} /> {currentProfile.designation || 'Software Development Specialist'}</span>
               <span>&bull;</span>
-              <span><Building size={14} style={{ display: 'inline', marginRight: 4 }} /> {currentProfile.department || 'Human Resources'}</span>
+              <span><Building size={14} style={{ display: 'inline', marginRight: 4 }} /> {currentProfile.department || 'Engineering & Technology'}</span>
               <span>&bull;</span>
               <span>ID: <strong>{currentProfile.employeeId || 'EMP-101'}</strong></span>
             </div>
@@ -148,7 +150,7 @@ export default function Profile() {
 
       {error && <div className="error-msg" style={{ marginBottom: 20 }}>{error}</div>}
 
-      {/* 2. Structured Section Tabs (NO CARD OVERLOAD) */}
+      {/* 2. Structured Section Tabs */}
       <div className="tabs-header">
         <button className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>
           <User size={16} /> Personal Information
@@ -164,7 +166,7 @@ export default function Profile() {
         </button>
       </div>
 
-      {/* 3. Editing Form vs Tab Content */}
+      {/* 3. Form vs Tab Content */}
       {editing ? (
         <div className="card" style={{ maxWidth: 560, background: '#ffffff', borderRadius: 20, padding: 28, border: '1px solid #eee5d8' }}>
           <h3 style={{ fontSize: 20, fontWeight: 800, color: '#2b1b12', marginBottom: 6 }}>Edit Contact Information</h3>
@@ -211,14 +213,14 @@ export default function Profile() {
           {activeTab === 'overview' && (
             <div style={{ background: '#ffffff', border: '1px solid #eee5d8', borderRadius: 20, padding: 28 }}>
               <h3 style={{ fontSize: 18, fontWeight: 800, color: '#2b1b12', marginBottom: 20 }}>Personal & Contact Details</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
                 {/* Full Name */}
                 <div style={{ background: '#fdfaf6', padding: 18, borderRadius: 14, border: '1px solid #eee5d8' }}>
                   <div style={{ fontSize: 12, fontWeight: 700, color: '#7a6758', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <User size={14} color="#b37a4c" /> Full Employee Name
                   </div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: '#2b1b12', marginTop: 4 }}>
-                    {currentProfile.name}
+                  <div style={{ fontSize: 16, fontWeight: 800, color: '#2b1b12', marginTop: 6 }}>
+                    {currentProfile.name || 'MOUNADHARSHINI VIMALRAJ'}
                   </div>
                 </div>
 
@@ -227,39 +229,39 @@ export default function Profile() {
                   <div style={{ fontSize: 12, fontWeight: 700, color: '#7a6758', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <Mail size={14} color="#b37a4c" /> Work Email Address
                   </div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: '#2b1b12', marginTop: 4 }}>
-                    {currentProfile.email}
+                  <div style={{ fontSize: 15, fontWeight: 700, color: '#2b1b12', marginTop: 6 }}>
+                    {currentProfile.email || '717824i140@kce.ac.in'}
                   </div>
                 </div>
 
-                {/* Phone Number (Proper Empty State - NO "N/A" / "Not specified") */}
+                {/* Phone Number */}
                 <div style={{ background: '#fdfaf6', padding: 18, borderRadius: 14, border: '1px solid #eee5d8' }}>
                   <div style={{ fontSize: 12, fontWeight: 700, color: '#7a6758', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <Phone size={14} color="#b37a4c" /> Phone Number
                   </div>
                   {currentProfile.phone && currentProfile.phone.trim() ? (
-                    <div style={{ fontSize: 15, fontWeight: 700, color: '#2b1b12', marginTop: 4 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: '#2b1b12', marginTop: 6 }}>
                       {currentProfile.phone}
                     </div>
                   ) : (
-                    <div style={{ marginTop: 4 }}>
+                    <div style={{ marginTop: 6 }}>
                       <div style={{ fontSize: 14, fontWeight: 700, color: '#9c6137' }}>Phone number not added yet</div>
                       <div style={{ fontSize: 12, color: '#7a6758', marginTop: 2 }}>Click "Edit Contact Info" above to add your phone number.</div>
                     </div>
                   )}
                 </div>
 
-                {/* Residential Address (Proper Empty State - NO "N/A" / "Not specified") */}
+                {/* Residence Address */}
                 <div style={{ background: '#fdfaf6', padding: 18, borderRadius: 14, border: '1px solid #eee5d8' }}>
                   <div style={{ fontSize: 12, fontWeight: 700, color: '#7a6758', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <MapPin size={14} color="#b37a4c" /> Residence Address
                   </div>
                   {currentProfile.address && currentProfile.address.trim() ? (
-                    <div style={{ fontSize: 15, fontWeight: 700, color: '#2b1b12', marginTop: 4 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: '#2b1b12', marginTop: 6 }}>
                       {currentProfile.address}
                     </div>
                   ) : (
-                    <div style={{ marginTop: 4 }}>
+                    <div style={{ marginTop: 6 }}>
                       <div style={{ fontSize: 14, fontWeight: 700, color: '#9c6137' }}>Address not added yet</div>
                       <div style={{ fontSize: 12, color: '#7a6758', marginTop: 2 }}>Click "Edit Contact Info" above to add your residential address.</div>
                     </div>
@@ -276,7 +278,7 @@ export default function Profile() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20 }}>
                 <div style={{ background: '#fdfaf6', padding: 18, borderRadius: 14, border: '1px solid #eee5d8' }}>
                   <div style={{ fontSize: 12, fontWeight: 700, color: '#7a6758', textTransform: 'uppercase' }}>EMPLOYEE ID</div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: '#2b1b12', marginTop: 4 }}>{currentProfile.employeeId}</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: '#2b1b12', marginTop: 4 }}>{currentProfile.employeeId || 'EMP-101'}</div>
                 </div>
 
                 <div style={{ background: '#fdfaf6', padding: 18, borderRadius: 14, border: '1px solid #eee5d8' }}>
@@ -301,7 +303,7 @@ export default function Profile() {
             </div>
           )}
 
-          {/* TAB 3: SALARY INFORMATION (READ ONLY FOR EMPLOYEES) */}
+          {/* TAB 3: SALARY INFORMATION */}
           {activeTab === 'salary' && (
             <div style={{ background: '#ffffff', border: '1px solid #eee5d8', borderRadius: 20, padding: 28 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
@@ -393,7 +395,6 @@ export default function Profile() {
                       </tr>
                     ))}
                     {(!currentProfile.documents || currentProfile.documents.length === 0) && (
-                      /* PROPER EMPTY STATE FOR DOCUMENTS - NO "Documents (0)" */
                       <tr>
                         <td colSpan={5} style={{ textAlign: 'center', padding: 40 }}>
                           <div style={{ background: '#fff4c2', color: '#b37a4c', width: 48, height: 48, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>

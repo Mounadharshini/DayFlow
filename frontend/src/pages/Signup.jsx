@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Shield, ArrowRight, Lock, Mail, User, Hash, CheckCircle2, ShieldAlert, Sparkles, Eye, EyeOff, KeyRound, RefreshCw } from 'lucide-react';
+import { Shield, ArrowRight, Lock, Mail, User, Hash, CheckCircle2, ShieldAlert, Sparkles, Eye, EyeOff, KeyRound, RefreshCw, ArrowLeft } from 'lucide-react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
@@ -12,7 +12,7 @@ export default function Signup() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  // Step state: 'register' vs 'otp' (Only used for manual signup!)
+  // Step state: 'register' vs 'otp'
   const [step, setStep] = useState('register'); // 'register' | 'otp'
   const [otpInput, setOtpInput] = useState('');
   const [userToken, setUserToken] = useState('');
@@ -23,7 +23,6 @@ export default function Signup() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  // Auto-detect OTP from email button click URL (?otp=708733)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlOtp = params.get('otp');
@@ -51,7 +50,6 @@ export default function Signup() {
     e.preventDefault();
     setError('');
 
-    // Strict Field Evaluation
     if (!form.employeeId.trim()) {
       setError('Employee ID is required (e.g. EMP-105)');
       return;
@@ -79,7 +77,7 @@ export default function Signup() {
       const res = await api.signup(form);
       setUserToken(res.token);
       setRegisteredEmail(form.email);
-      setStep('otp'); // Switch directly to OTP verification step on this page!
+      setStep('otp');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -123,7 +121,6 @@ export default function Signup() {
     }
   };
 
-  // Google Sign-Up automatically verifies email and skips OTP screen completely!
   const handleGoogleSignUp = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       setLoading(true);
@@ -144,7 +141,6 @@ export default function Signup() {
           picture: googleUser.picture || ''
         });
 
-        // Direct Login without OTP for Google Accounts!
         login(res.token, res.user);
         navigate(res.user.role === 'Admin' ? '/admin' : '/dashboard');
       } catch (err) {
@@ -163,9 +159,13 @@ export default function Signup() {
       {/* Left Column: Bronze & Mocha Onboarding Hero */}
       <div className="auth-hero-section signup-hero">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 40 }}>
-            <span className="logo-badge" style={{ background: 'linear-gradient(135deg, #cc9966 0%, #9c6137 100%)' }}>EV</span>
-            <span style={{ fontSize: 24, fontWeight: 800, color: 'white', letterSpacing: '-0.5px' }}>ElyVia Onboarding</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 36 }}>
+            <img 
+              src="/elyvia-logo.jpg" 
+              alt="ElyVia Logo" 
+              style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #cc9966', boxShadow: '0 2px 10px rgba(204,153,102,0.4)' }} 
+            />
+            <span className="brand-name" style={{ fontSize: 24 }}>ElyVia Onboarding</span>
           </div>
 
           <div style={{ background: 'rgba(255, 244, 194, 0.15)', border: '1px solid rgba(255, 244, 194, 0.3)', padding: '6px 14px', borderRadius: 999, display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#fff4c2', marginBottom: 24 }}>
@@ -224,6 +224,13 @@ export default function Signup() {
 
       {/* Right Column: Registration vs OTP Verification */}
       <div className="auth-form-section">
+        {/* Back to Home Link */}
+        <div style={{ marginBottom: 20 }}>
+          <Link to="/" style={{ fontSize: 13, fontWeight: 700, color: '#b37a4c', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <ArrowLeft size={15} /> Back to Home Landing Page
+          </Link>
+        </div>
+
         {step === 'register' ? (
           <>
             <div style={{ marginBottom: 28 }}>
@@ -231,7 +238,7 @@ export default function Signup() {
               <p className="muted" style={{ marginTop: 4 }}>Get started with your company email</p>
             </div>
 
-            {/* Google Sign-Up Button (NO OTP REQUIRED FOR GOOGLE!) */}
+            {/* Google Sign-Up Button */}
             <button type="button" className="btn-google" onClick={() => handleGoogleSignUp()} disabled={loading}>
               <svg width="20" height="20" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -309,7 +316,7 @@ export default function Signup() {
                 </button>
               </div>
 
-              {/* Text Only Password Strength Label */}
+              {/* Password Strength */}
               {form.password && (
                 <div style={{ fontSize: 12, fontWeight: 700, marginTop: 6, color: strength <= 1 ? '#dc2626' : strength === 2 ? '#d97706' : '#b37a4c' }}>
                   Password Strength: {strength <= 1 ? 'Weak' : strength === 2 ? 'Medium' : 'Strong'}
@@ -325,14 +332,14 @@ export default function Signup() {
                   style={{ width: 'auto' }}
                 />
                 <label htmlFor="agree" style={{ margin: 0, fontSize: 12, fontWeight: 500, color: '#7a6758', cursor: 'pointer' }}>
-                  I agree to the Terms of Service & Privacy Policy
+                  I agree to the Terms of Service &amp; Privacy Policy
                 </label>
               </div>
 
               {error && <div className="error-msg">{error}</div>}
 
               <button className="btn-primary" type="submit" disabled={loading} style={{ marginTop: 24 }}>
-                {loading ? 'Sending OTP Email...' : <>Register & Send Email OTP <ArrowRight size={16} /></>}
+                {loading ? 'Sending OTP Email...' : <>Register &amp; Send Email OTP <ArrowRight size={16} /></>}
               </button>
             </form>
 
@@ -388,7 +395,7 @@ export default function Signup() {
               {error && <div className="error-msg" style={{ textAlign: 'center' }}>{error}</div>}
 
               <button className="btn-primary" type="submit" disabled={loading} style={{ marginTop: 24 }}>
-                {loading ? 'Verifying Code...' : <>Verify Email & Enter Dashboard <CheckCircle2 size={16} /></>}
+                {loading ? 'Verifying Code...' : <>Verify Email &amp; Enter Dashboard <CheckCircle2 size={16} /></>}
               </button>
             </form>
 

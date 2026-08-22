@@ -4,8 +4,12 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [auth, setAuth] = useState(() => {
-    const saved = localStorage.getItem('dayflow_auth');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem('dayflow_auth');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
   });
 
   const login = (token, user) => {
@@ -20,7 +24,13 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ auth, login, logout }}>
+    <AuthContext.Provider value={{ 
+      auth, 
+      token: auth?.token, 
+      user: auth?.user, 
+      login, 
+      logout 
+    }}>
       {children}
     </AuthContext.Provider>
   );
