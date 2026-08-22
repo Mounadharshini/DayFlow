@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Shield, UserCheck, ArrowRight, Lock, Mail } from 'lucide-react';
+import { Shield, UserPlus, ArrowRight, Lock, Mail } from 'lucide-react';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
 
@@ -40,7 +40,7 @@ export default function Login() {
 
         <div style={{ background: '#f8fafc', padding: 14, borderRadius: 12, marginBottom: 20, border: '1px solid #e2e8f0' }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Quick Demo Login Personas
+            System Administrator Account
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <button
@@ -51,14 +51,13 @@ export default function Login() {
             >
               <Shield size={14} color="#4f46e5" /> HR Admin
             </button>
-            <button
-              type="button"
+            <Link
+              to="/signup"
               className="btn-secondary btn-sm"
-              onClick={() => handleSubmit(null, 'alex.morgan@dayflow.com', 'Employee@123')}
-              style={{ fontSize: 12, justifyContent: 'center' }}
+              style={{ fontSize: 12, justifyContent: 'center', textDecoration: 'none', color: '#10b981' }}
             >
-              <UserCheck size={14} color="#10b981" /> Employee
-            </button>
+              <UserPlus size={14} /> New Employee
+            </Link>
           </div>
         </div>
 
