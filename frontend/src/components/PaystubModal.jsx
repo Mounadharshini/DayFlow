@@ -25,11 +25,11 @@ export default function PaystubModal({ paystub, onClose }) {
         <div className="paystub-card">
           <div className="paystub-header">
             <div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: '#4f46e5', letterSpacing: '-0.5px' }}>
-                DAYFLOW HRMS
+              <div style={{ fontSize: 24, fontWeight: 800, color: '#6366f1', letterSpacing: '-0.5px' }}>
+                ELYVIA HRMS
               </div>
               <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>
-                Official Salary Disbursement Record
+                Official Corporate Salary Disbursement Record
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>
@@ -98,13 +98,13 @@ export default function PaystubModal({ paystub, onClose }) {
               <div style={{ fontSize: 13, fontWeight: 700, color: '#4338ca' }}>Net Salary Payable</div>
               <div style={{ fontSize: 12, color: '#6366f1' }}>Transferred to {paystub.bankName} ({paystub.accountNumber})</div>
             </div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: '#4f46e5' }}>
+            <div style={{ fontSize: 26, fontWeight: 800, color: '#6366f1' }}>
               ₹{paystub.netPay.toLocaleString()}
             </div>
           </div>
 
           <div style={{ marginTop: 24, textAlign: 'center', fontSize: 12, color: '#94a3b8' }}>
-            This is a computer-generated salary statement from Dayflow HRMS and does not require a physical signature.
+            This is an official computer-generated salary statement from ElyVia HRMS and does not require a physical signature.
           </div>
         </div>
       </div>

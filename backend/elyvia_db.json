@@ -1,0 +1,32 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "employeeId": "EMP-ADMIN",
+      "name": "ElyVia HR Admin",
+      "email": "admin@elyvia.com",
+      "password": "$2a$10$4.h67PZ7UaB6976k40q2aee8K.y458Y16qj6v/eY27bWzXy8Vp5xO",
+      "role": "Admin",
+      "department": "Human Resources",
+      "designation": "HR Executive Director",
+      "joinDate": "2026-08-22",
+      "salary": 120000,
+      "basicSalary": 60000,
+      "hra": 30000,
+      "allowances": 30000,
+      "pf": 7200,
+      "tax": 12000,
+      "isEmailVerified": 1,
+      "phone": "+1 (555) 019-2834",
+      "address": "ElyVia HR HQ, Suite 500",
+      "profilePicture": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400",
+      "documents": "[]",
+      "paidLeaveRemaining": 12,
+      "sickLeaveRemaining": 8,
+      "createdAt": "2026-08-22T10:00:00.000Z"
+    }
+  ],
+  "attendance": [],
+  "leaves": [],
+  "notifications": []
+}

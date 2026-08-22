@@ -21,6 +21,7 @@ export const api = {
   // Auth & Verification
   signup: (payload) => request('/auth/signup', { method: 'POST', body: payload }),
   login: (payload) => request('/auth/login', { method: 'POST', body: payload }),
+  googleAuth: (payload) => request('/auth/google', { method: 'POST', body: payload }),
   sendVerifyEmail: (token) => request('/auth/verify-send', { method: 'POST', token }),
   confirmVerifyEmail: (token, otp) => request('/auth/verify-confirm', { method: 'POST', body: { otp }, token }),
 

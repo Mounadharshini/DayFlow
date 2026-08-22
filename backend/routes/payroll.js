@@ -38,7 +38,7 @@ function buildPaystub(user) {
     netPay,
     payPeriod: new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' }),
     paymentStatus: 'Processed',
-    bankName: 'First National Tech Bank',
+    bankName: 'ElyVia Corporate Bank',
     accountNumber: '**** **** 4892'
   };
 }

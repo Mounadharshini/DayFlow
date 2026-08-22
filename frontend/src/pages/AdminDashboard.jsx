@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users, Search, Edit3, UserCheck, CreditCard, ShieldCheck, Eye, Plus } from 'lucide-react';
+import { Users, Search, Edit3, UserCheck, CreditCard, ShieldCheck, Eye, UserPlus, ArrowUpRight } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import EmployeeSwitcherModal from '../components/EmployeeSwitcherModal';
 import { api } from '../api';
@@ -54,6 +54,7 @@ export default function AdminDashboard() {
   );
 
   const totalPayroll = employees.reduce((sum, e) => sum + (Number(e.salary) || 0), 0);
+  const adminCount = employees.filter(e => e.role === 'Admin').length;
 
   return (
     <div>
@@ -64,7 +65,7 @@ export default function AdminDashboard() {
         <div className="flex-between">
           <div>
             <h2 style={{ fontSize: 26, fontWeight: 800, color: '#0f172a' }}>HR Control Center</h2>
-            <p className="muted">Manage employee profiles, payroll structures, and system access.</p>
+            <p className="muted">Manage employee records, promote staff to HR Admin, and inspect payroll structures.</p>
           </div>
           <button className="btn-primary" onClick={() => setShowInspector(true)} style={{ width: 'auto' }}>
             <Eye size={18} /> Open 360° Employee Inspector
@@ -79,7 +80,16 @@ export default function AdminDashboard() {
               <div className="icon-wrapper icon-primary"><Users size={20} /></div>
             </div>
             <div className="big">{employees.length}</div>
-            <p className="muted">Active personnel records</p>
+            <p className="muted">Registered employee records</p>
+          </div>
+
+          <div className="card">
+            <div className="card-header-icon">
+              <h3>Active HR Admins</h3>
+              <div className="icon-wrapper icon-warning"><ShieldCheck size={20} /></div>
+            </div>
+            <div className="big" style={{ color: '#4f46e5' }}>{adminCount}</div>
+            <p className="muted">Administrative privileges</p>
           </div>
 
           <div className="card">
@@ -88,22 +98,16 @@ export default function AdminDashboard() {
               <div className="icon-wrapper icon-success"><CreditCard size={20} /></div>
             </div>
             <div className="big">₹{totalPayroll.toLocaleString()}</div>
-            <p className="muted">Organization-wide annual budget</p>
-          </div>
-
-          <div className="card">
-            <div className="card-header-icon">
-              <h3>HR Administrator</h3>
-              <div className="icon-wrapper icon-warning"><ShieldCheck size={20} /></div>
-            </div>
-            <div className="big" style={{ fontSize: 18 }}>{auth.user.name}</div>
-            <p className="muted">{auth.user.email}</p>
+            <p className="muted">Organization annual budget</p>
           </div>
         </div>
 
-        {/* Employee Directory & Management Table */}
+        {/* Employee Directory & Promotion Table */}
         <div className="flex-between" style={{ marginTop: 32 }}>
-          <h3 className="section-title" style={{ margin: 0 }}>Employee Roster ({filtered.length})</h3>
+          <div>
+            <h3 className="section-title" style={{ margin: 0 }}>Employee Roster & Role Management</h3>
+            <p className="muted" style={{ fontSize: 13 }}>Click "Edit" on any employee row to adjust salary or promote them to HR Admin</p>
+          </div>
           <div style={{ position: 'relative', width: 280 }}>
             <Search size={16} style={{ position: 'absolute', left: 12, top: 12, color: '#94a3b8' }} />
             <input
@@ -121,7 +125,7 @@ export default function AdminDashboard() {
               <tr>
                 <th>Emp ID</th>
                 <th>Name</th>
-                <th>Role</th>
+                <th>Role & Permissions</th>
                 <th>Department</th>
                 <th>Designation</th>
                 <th>Annual Salary</th>
@@ -136,9 +140,9 @@ export default function AdminDashboard() {
                     <>
                       <td><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} style={{ width: 140 }} /></td>
                       <td>
-                        <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} style={{ width: 110 }}>
+                        <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} style={{ width: 130, fontWeight: 700, borderColor: '#4f46e5' }}>
                           <option value="Employee">Employee</option>
-                          <option value="Admin">Admin</option>
+                          <option value="Admin">HR Admin 👑</option>
                         </select>
                       </td>
                       <td><input value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} style={{ width: 120 }} /></td>
@@ -167,8 +171,8 @@ export default function AdminDashboard() {
                         </div>
                       </td>
                       <td>
-                        <span style={{ fontSize: 12, fontWeight: 700, background: emp.role === 'Admin' ? '#eef2ff' : '#f1f5f9', color: emp.role === 'Admin' ? '#4f46e5' : '#475569', padding: '3px 8px', borderRadius: 6 }}>
-                          {emp.role}
+                        <span style={{ fontSize: 12, fontWeight: 700, background: emp.role === 'Admin' ? '#eef2ff' : '#f1f5f9', color: emp.role === 'Admin' ? '#4f46e5' : '#475569', padding: '4px 10px', borderRadius: 6, border: `1px solid ${emp.role === 'Admin' ? '#c7d2fe' : '#e2e8f0'}` }}>
+                          {emp.role === 'Admin' ? 'HR Admin 👑' : 'Employee'}
                         </span>
                       </td>
                       <td>{emp.department || '—'}</td>
@@ -176,7 +180,7 @@ export default function AdminDashboard() {
                       <td style={{ fontWeight: 700, color: '#10b981' }}>₹{(emp.salary || 0).toLocaleString()}</td>
                       <td>
                         <button className="btn-secondary btn-sm" onClick={() => startEdit(emp)}>
-                          <Edit3 size={14} /> Edit
+                          <Edit3 size={14} /> Edit / Promote
                         </button>
                       </td>
                     </>

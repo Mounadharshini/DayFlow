@@ -1,10 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
+require('dotenv').config();
 
-const dbFile = path.join(__dirname, 'dayflow_db.json');
+const dbFile = path.join(__dirname, 'elyvia_db.json');
 
-// Memory store backed by JSON file
+// Memory store backed by JSON file for local execution & fallback
 let data = {
   users: [],
   attendance: [],
@@ -33,7 +34,7 @@ function saveDB() {
 
 loadDB();
 
-// Database Mock Engine matching better-sqlite3 prepared statement API
+// Database Mock Engine matching prepared statement API
 const db = {
   pragma: () => {},
   exec: (sql) => {},
@@ -388,19 +389,19 @@ const db = {
   }
 };
 
-// Ensure default Admin user is present and reset database to clean initial state
-const adminExists = data.users.find(u => u.email === 'admin@dayflow.com');
+// Ensure default ElyVia Admin user is present and reset database to clean initial state
+const adminExists = data.users.find(u => u.email === 'admin@elyvia.com' || u.email === 'admin@dayflow.com');
 if (!adminExists) {
   const adminHash = bcrypt.hashSync('Admin@123', 10);
   data.users.push({
     id: 1,
     employeeId: 'EMP-ADMIN',
-    name: 'HR Admin',
-    email: 'admin@dayflow.com',
+    name: 'ElyVia HR Admin',
+    email: 'admin@elyvia.com',
     password: adminHash,
     role: 'Admin',
     department: 'Human Resources',
-    designation: 'HR Manager',
+    designation: 'HR Executive Director',
     joinDate: new Date().toISOString().slice(0, 10),
     salary: 120000,
     basicSalary: 60000,
@@ -409,9 +410,9 @@ if (!adminExists) {
     pf: 7200,
     tax: 12000,
     isEmailVerified: 1,
-    phone: '',
-    address: '',
-    profilePicture: '',
+    phone: '+1 (555) 019-2834',
+    address: 'ElyVia HR HQ, Suite 500',
+    profilePicture: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80',
     documents: '[]',
     paidLeaveRemaining: 12,
     sickLeaveRemaining: 8,
@@ -420,6 +421,6 @@ if (!adminExists) {
   saveDB();
 }
 
-console.log('Dayflow Database initialized with', data.users.length, 'users (Admin account active). Zero mock employees.');
+console.log('ElyVia Engine initialized with', data.users.length, 'user(s) [Admin account active]. Zero mock employees.');
 
 module.exports = db;

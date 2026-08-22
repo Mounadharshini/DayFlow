@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-require('./db'); // initializes DB + seeds admin & sample employees
+require('./db');
 
 const app = express();
 app.use(cors());
@@ -14,7 +14,7 @@ app.use('/api/payroll', require('./routes/payroll'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/notifications', require('./routes/notifications'));
 
-app.get('/api/health', (req, res) => res.json({ status: 'ok', service: 'Dayflow HRMS API', version: '2.0.0' }));
+app.get('/api/health', (req, res) => res.json({ status: 'ok', service: 'ElyVia HRMS API', version: '3.0.0' }));
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Dayflow HRMS backend running on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`ElyVia HRMS backend running on http://localhost:${PORT}`));

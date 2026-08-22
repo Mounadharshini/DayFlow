@@ -1,16 +1,13 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-const userEmail = (process.env.SMTP_USER || 'dhachumaa182@gmail.com').trim();
-const userPass = (process.env.SMTP_PASS || 'bhkskncueqsxlijs').replace(/\s+/g, '').trim();
-
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: parseInt(process.env.SMTP_PORT || '465', 10),
+  secure: process.env.SMTP_SECURE === 'true' || true,
   auth: {
-    user: userEmail,
-    pass: userPass,
+    user: (process.env.SMTP_USER || 'dhachumaa182@gmail.com').trim(),
+    pass: (process.env.SMTP_PASS || 'bhkskncueqsxlijs').replace(/\s+/g, '')
   },
   tls: {
     rejectUnauthorized: false
@@ -18,20 +15,21 @@ const transporter = nodemailer.createTransport({
 });
 
 async function sendMail({ to, subject, html, text }) {
+  const mailOptions = {
+    from: '"ElyVia HRMS" <dhachumaa182@gmail.com>',
+    to,
+    subject,
+    text: text || 'Message from ElyVia HRMS',
+    html
+  };
+
   try {
-    console.log(`[SMTP] Attempting to send email to "${to}" via ${userEmail}...`);
-    const info = await transporter.sendMail({
-      from: `"Dayflow HRMS" <${userEmail}>`,
-      to,
-      subject,
-      text: text || '',
-      html: html || text,
-    });
-    console.log('[SMTP] ✅ Email successfully delivered! MessageID:', info.messageId, 'Recipient:', to);
-    return true;
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`[SMTP Mailer] Real email dispatched to ${to} | Message ID: ${info.messageId}`);
+    return info;
   } catch (err) {
-    console.error('[SMTP] ❌ Failed to deliver email:', err.message);
-    return false;
+    console.error(`[SMTP Mailer Error] Failed sending email to ${to}:`, err.message);
+    throw err;
   }
 }
 

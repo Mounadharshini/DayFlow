@@ -41,13 +41,12 @@ router.post('/', async (req, res) => {
   db.prepare(`INSERT INTO notifications (userId, title, message, type) VALUES (?,?,?,?)`)
     .run(req.user.id, 'Leave Request Submitted', `Your ${type} leave request (${startDate} to ${endDate}, ${daysCount} days) is pending approval.`, 'info');
 
-  // Send real email alert to employee and admin
   sendMail({
     to: user.email,
-    subject: `Dayflow HRMS — Leave Request Submitted (${type})`,
+    subject: `ElyVia HRMS — Leave Request Submitted (${type})`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
-        <h3 style="color: #4f46e5;">Leave Application Submitted</h3>
+        <h3 style="color: #6366f1;">Leave Application Submitted</h3>
         <p>Hello <strong>${user.name}</strong>,</p>
         <p>Your request for <strong>${type} Leave</strong> (${daysCount} day(s) from ${startDate} to ${endDate}) has been submitted and is pending HR Admin approval.</p>
         <p style="font-size: 13px; color: #64748b;">Remarks: ${remarks || 'None'}</p>
@@ -124,7 +123,7 @@ router.put('/:id', auth, requireAdmin, async (req, res) => {
     if (emp) {
       sendMail({
         to: emp.email,
-        subject: `Dayflow HRMS — Leave Request Approved! 🎉`,
+        subject: `ElyVia HRMS — Leave Request Approved! 🎉`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
             <h3 style="color: #10b981;">Leave Approved 🎉</h3>
@@ -142,7 +141,7 @@ router.put('/:id', auth, requireAdmin, async (req, res) => {
     if (emp) {
       sendMail({
         to: emp.email,
-        subject: `Dayflow HRMS — Leave Request Decision`,
+        subject: `ElyVia HRMS — Leave Request Decision`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
             <h3 style="color: #ef4444;">Leave Request Rejected</h3>
