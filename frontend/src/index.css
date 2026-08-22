@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@700;800;900&family=Plus+Jakarta Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Alex+Brush&family=Great+Vibes&family=Dancing+Script:wght@700&family=Pinyon+Script&family=Outfit:wght@700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
   /* Strict Cream and Brown Color Palette */
@@ -41,7 +41,7 @@
   --shadow-md: 0 4px 14px -2px rgb(35 23 16 / 0.06);
   --shadow-lg: 0 16px 32px -4px rgb(35 23 16 / 0.10);
   --font: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  --font-brand: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  --font-brand: 'Alex Brush', 'Great Vibes', cursive;
 }
 
 * {
@@ -74,11 +74,6 @@ a {
   50% { opacity: 1; transform: scale(1.08); filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.8)); }
 }
 
-@keyframes subtleFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
-}
-
 .shimmer-text {
   background: linear-gradient(90deg, #fff4c2 0%, #ffffff 25%, #d4af37 50%, #ffffff 75%, #fff4c2 100%);
   background-size: 200% auto;
@@ -91,21 +86,24 @@ a {
   animation: pulseGlow 2.5s ease-in-out infinite;
 }
 
-.float-effect {
-  animation: subtleFloat 3s ease-in-out infinite;
-}
-
+/* Stylish Cursive Script Brand Name (Full Vertical Padding to Prevent Top Cutoffs) */
 .brand-name {
-  font-family: var(--font-brand);
-  font-weight: 900;
-  letter-spacing: -0.04em;
-  font-size: 24px;
+  font-family: 'Alex Brush', 'Great Vibes', cursive;
+  font-weight: 400;
+  font-size: 34px;
+  letter-spacing: 0.02em;
   color: #ffffff;
-  background: linear-gradient(90deg, #ffffff 0%, #fff4c2 40%, #e2c074 70%, #ffffff 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #fff4c2 35%, #e2c074 70%, #cc9966 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: goldShimmer 6s linear infinite;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
+  line-height: 1.4;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  padding-right: 8px;
+  display: inline-block;
 }
 
 .logo-badge {
@@ -400,6 +398,7 @@ button {
   padding: 7px 14px;
   font-size: 13px;
   border-radius: 8px;
+  width: auto;
 }
 
 .btn-success { background: #9c6137; color: white; }

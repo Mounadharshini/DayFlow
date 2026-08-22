@@ -12,30 +12,30 @@ router.get('/', auth, requireAdmin, (req, res) => {
   const date = todayStr();
 
   // Metrics
-  const totalEmployees = db.prepare('SELECT COUNT(*) as count FROM users WHERE role = "Employee"').get().count;
+  const totalEmployees = db.prepare('SELECT COUNT(*) as count FROM users WHERE role = "Employee"').get()?.count || 0;
 
-  const todayPresent = db.prepare('SELECT COUNT(*) as count FROM attendance WHERE date = ? AND status = "Present"').get(date).count;
-  const todayAbsent = db.prepare('SELECT COUNT(*) as count FROM attendance WHERE date = ? AND status = "Absent"').get(date).count;
-  const todayOnLeave = db.prepare('SELECT COUNT(*) as count FROM attendance WHERE date = ? AND status = "Leave"').get(date).count;
+  const todayPresent = db.prepare('SELECT COUNT(*) as count FROM attendance WHERE date = ? AND status = "Present"').get(date)?.count || 0;
+  const todayAbsent = db.prepare('SELECT COUNT(*) as count FROM attendance WHERE date = ? AND status = "Absent"').get(date)?.count || 0;
+  const todayOnLeave = db.prepare('SELECT COUNT(*) as count FROM attendance WHERE date = ? AND status = "Leave"').get(date)?.count || 0;
 
-  const pendingLeaves = db.prepare('SELECT COUNT(*) as count FROM leaves WHERE status = "Pending"').get().count;
+  const pendingLeaves = db.prepare('SELECT COUNT(*) as count FROM leaves WHERE status = "Pending"').get()?.count || 0;
 
   // Monthly payroll total
-  const annualTotal = db.prepare('SELECT SUM(salary) as sum FROM users').get().sum || 0;
+  const annualTotal = db.prepare('SELECT SUM(salary) as sum FROM users').get()?.sum || 0;
   const monthlyPayroll = Math.round(annualTotal / 12);
 
   // Department distribution
-  const deptRows = db.prepare('SELECT department, COUNT(*) as count FROM users GROUP BY department').all();
-  const departmentStats = deptRows.map(r => ({
+  const deptRows = db.prepare('SELECT department, COUNT(*) as count FROM users GROUP BY department').all() || [];
+  const departmentStats = (deptRows || []).map(r => ({
     department: r.department || 'Unassigned',
-    count: r.count
+    count: r.count || 0
   }));
 
   // Leave types count
-  const leaveRows = db.prepare('SELECT type, COUNT(*) as count FROM leaves GROUP BY type').all();
-  const leaveStats = leaveRows.map(r => ({
-    type: r.type,
-    count: r.count
+  const leaveRows = db.prepare('SELECT type, COUNT(*) as count FROM leaves GROUP BY type').all() || [];
+  const leaveStats = (leaveRows || []).map(r => ({
+    type: r.type || 'General',
+    count: r.count || 0
   }));
 
   // Recent 7 days attendance trend
@@ -45,9 +45,9 @@ router.get('/', auth, requireAdmin, (req, res) => {
     const d = new Date(todayDate);
     d.setDate(d.getDate() - i);
     const dStr = d.toISOString().slice(0, 10);
-    const pres = db.prepare('SELECT COUNT(*) as count FROM attendance WHERE date = ? AND status = "Present"').get(dStr).count;
-    const lv = db.prepare('SELECT COUNT(*) as count FROM attendance WHERE date = ? AND status = "Leave"').get(dStr).count;
-    const abs = db.prepare('SELECT COUNT(*) as count FROM attendance WHERE date = ? AND status = "Absent"').get(dStr).count;
+    const pres = db.prepare('SELECT COUNT(*) as count FROM attendance WHERE date = ? AND status = "Present"').get(dStr)?.count || 0;
+    const lv = db.prepare('SELECT COUNT(*) as count FROM attendance WHERE date = ? AND status = "Leave"').get(dStr)?.count || 0;
+    const abs = db.prepare('SELECT COUNT(*) as count FROM attendance WHERE date = ? AND status = "Absent"').get(dStr)?.count || 0;
     trendDays.push({
       date: dStr,
       day: d.toLocaleDateString('en-US', { weekday: 'short' }),

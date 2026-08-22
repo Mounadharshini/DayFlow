@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Mail, Phone, MapPin, Send, CheckCircle2, Clock, MessageSquare } from 'lucide-react';
+import { api } from '../api';
 import { useToast } from '../components/Toast';
 import PublicHeader from '../components/PublicHeader';
 
@@ -9,16 +10,20 @@ export default function Contact() {
   const [submitted, setSubmitted] = useState(false);
   const { showToast } = useToast();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name || !form.email || !form.message) return;
     setLoading(true);
 
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await api.submitContactInquiry(form);
       setSubmitted(true);
-      showToast('Your message has been sent to HR Administration!', 'success');
-    }, 800);
+      showToast('Your message has been routed to HR Administration!', 'success');
+    } catch (err) {
+      showToast(err.message || 'Failed to submit inquiry', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -26,7 +31,7 @@ export default function Contact() {
       {/* 1. Shared Unified Navbar (Home | Features | About | Contact) */}
       <PublicHeader />
 
-      {/* 2. Sleek Clean Header (Solid Dark Espresso with subtle accent - NO harsh gradient band) */}
+      {/* 2. Sleek Clean Header (Solid Dark Espresso with subtle accent) */}
       <section style={{ 
         background: '#231710', 
         color: 'white', 
@@ -58,7 +63,7 @@ export default function Contact() {
                   <Mail size={20} />
                 </div>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: '#7a6758', textTransform: 'uppercase' }}>WORK EMAIL</div>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: '#7a6758', textTransform: 'uppercase' }}>OFFICIAL HR ADMIN EMAIL</div>
                   <div style={{ fontSize: 15, fontWeight: 700, color: '#2b1b12', marginTop: 2 }}>admin@elyvia.com</div>
                   <div style={{ fontSize: 12, color: '#7a6758', marginTop: 2 }}>General HR &amp; support inquiries</div>
                 </div>
@@ -153,7 +158,7 @@ export default function Contact() {
                 </div>
                 <h3 style={{ fontSize: 24, fontWeight: 800, color: '#2b1b12' }}>Message Received!</h3>
                 <p style={{ color: '#7a6758', fontSize: 14, marginTop: 8, lineHeight: 1.6 }}>
-                  Thank you, <strong>{form.name}</strong>. Your message regarding <strong>{form.subject}</strong> has been routed to HR Administration.
+                  Thank you, <strong>{form.name}</strong>. Your message regarding <strong>{form.subject}</strong> has been routed directly to the HR Admin Dashboard (admin@elyvia.com).
                 </p>
 
                 <button className="btn-secondary" onClick={() => { setSubmitted(false); setForm({ name: '', email: '', subject: 'General HR Inquiry', message: '' }); }} style={{ marginTop: 28 }}>

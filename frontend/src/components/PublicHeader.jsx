@@ -21,16 +21,17 @@ export default function PublicHeader() {
 
   return (
     <header style={{ 
-      background: '#231710', 
+      background: '#140c08', 
       color: 'white', 
-      padding: '14px 36px', 
+      padding: '12px 36px', 
       position: 'sticky', 
       top: 0, 
       zIndex: 100, 
-      boxShadow: '0 4px 20px rgba(35, 23, 16, 0.25)'
+      boxShadow: '0 8px 30px rgba(0, 0, 0, 0.45)',
+      borderBottom: '2px solid rgba(204, 153, 102, 0.4)'
     }}>
       <div style={{ maxWidth: 1400, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'nowrap', gap: 20 }}>
-        {/* Official ElyVia Logo */}
+        {/* Official ElyVia Logo & Cursive Brand Name (Full Vertical Padding to Prevent Top Cutoffs) */}
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none', flexShrink: 0 }}>
           <img 
             src="/elyvia-logo.jpg" 
@@ -40,15 +41,32 @@ export default function PublicHeader() {
               width: 42, 
               borderRadius: '50%', 
               objectFit: 'cover', 
-              boxShadow: '0 2px 12px rgba(204, 153, 102, 0.5)', 
-              border: '1.5px solid #cc9966',
-              background: '#fdfaf6'
+              boxShadow: '0 0 12px rgba(204, 153, 102, 0.55)', 
+              border: '2px solid #cc9966',
+              background: '#fdfaf6',
+              flexShrink: 0
             }} 
           />
-          <div style={{ whiteSpace: 'nowrap' }}>
-            <span className="brand-name" style={{ fontSize: 24 }}>ElyVia</span>
-            <span style={{ fontSize: 11, color: '#cc9966', fontWeight: 800, marginLeft: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>HRMS</span>
-          </div>
+          <span 
+            className="brand-name" 
+            style={{ 
+              fontFamily: "'Alex Brush', 'Great Vibes', cursive", 
+              fontSize: 34, 
+              fontWeight: 400, 
+              letterSpacing: '0.02em',
+              background: 'linear-gradient(135deg, #ffffff 0%, #fff4c2 35%, #e2c074 70%, #cc9966 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
+              lineHeight: 1.4,
+              paddingTop: 6,
+              paddingBottom: 6,
+              paddingRight: 8,
+              display: 'inline-block'
+            }}
+          >
+            ElyVia
+          </span>
         </Link>
 
         {/* Complete Navigation Links across ALL 4 pages (Home | Features | About | Contact) */}
@@ -59,7 +77,7 @@ export default function PublicHeader() {
               color: isActive('/') ? '#ffffff' : '#d1c1b5', 
               textDecoration: 'none', 
               transition: 'color 0.2s', 
-              borderBottom: isActive('/') ? '2px solid #b37a4c' : '2px solid transparent', 
+              borderBottom: isActive('/') ? '2.5px solid #cc9966' : '2.5px solid transparent', 
               paddingBottom: 4,
               fontWeight: isActive('/') ? 800 : 600
             }}
@@ -72,7 +90,7 @@ export default function PublicHeader() {
               color: isActive('/features') ? '#ffffff' : '#d1c1b5', 
               textDecoration: 'none', 
               transition: 'color 0.2s', 
-              borderBottom: isActive('/features') ? '2px solid #b37a4c' : '2px solid transparent', 
+              borderBottom: isActive('/features') ? '2.5px solid #cc9966' : '2.5px solid transparent', 
               paddingBottom: 4,
               fontWeight: isActive('/features') ? 800 : 600
             }}
@@ -85,7 +103,7 @@ export default function PublicHeader() {
               color: isActive('/about') ? '#ffffff' : '#d1c1b5', 
               textDecoration: 'none', 
               transition: 'color 0.2s', 
-              borderBottom: isActive('/about') ? '2px solid #b37a4c' : '2px solid transparent', 
+              borderBottom: isActive('/about') ? '2.5px solid #cc9966' : '2.5px solid transparent', 
               paddingBottom: 4,
               fontWeight: isActive('/about') ? 800 : 600
             }}
@@ -98,7 +116,7 @@ export default function PublicHeader() {
               color: isActive('/contact') ? '#ffffff' : '#d1c1b5', 
               textDecoration: 'none', 
               transition: 'color 0.2s', 
-              borderBottom: isActive('/contact') ? '2px solid #b37a4c' : '2px solid transparent', 
+              borderBottom: isActive('/contact') ? '2.5px solid #cc9966' : '2.5px solid transparent', 
               paddingBottom: 4,
               fontWeight: isActive('/contact') ? 800 : 600
             }}

@@ -7,9 +7,20 @@ frontend/node_modules/
 dist/
 frontend/dist/
 
-# Environment and Local DB
+# Environment Files
 .env
+.env.local
+.env.development
+.env.test
+.env.production
+backend/.env
+frontend/.env
+
+# Logs and databases
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # System files
 .DS_Store

@@ -33,8 +33,8 @@ export default function Sidebar() {
     { to: '/admin/attendance', label: 'Attendance', icon: Calendar },
     { to: '/admin/leaves', label: 'Leave Approvals', icon: FileCheck },
     { to: '/admin/payroll', label: 'Payroll', icon: CreditCard },
+    { to: '/admin/notifications', label: 'Notifications', icon: Bell },
     { to: '/analytics', label: 'Reports / Analytics', icon: BarChart3 },
-    { to: '/notifications', label: 'Notifications', icon: Bell },
   ];
 
   const handleLogout = () => {
@@ -107,12 +107,13 @@ export default function Sidebar() {
           {!isAdmin ? (
             employeeLinks.map(link => {
               const Icon = link.icon;
-              const isActive = location.pathname === link.to;
+              const isItemActive = location.pathname === link.to;
               return (
                 <NavLink 
                   key={link.to} 
                   to={link.to} 
-                  className={isActive ? 'active' : ''}
+                  end
+                  className={() => isItemActive ? 'active' : ''}
                   onClick={() => setMobileOpen(false)}
                   title={collapsed ? link.label : ''}
                 >
@@ -124,12 +125,13 @@ export default function Sidebar() {
           ) : (
             adminLinks.map(link => {
               const Icon = link.icon;
-              const isActive = location.pathname === link.to;
+              const isItemActive = location.pathname === link.to;
               return (
                 <NavLink 
                   key={link.to} 
                   to={link.to} 
-                  className={isActive ? 'active' : ''}
+                  end
+                  className={() => isItemActive ? 'active' : ''}
                   onClick={() => setMobileOpen(false)}
                   title={collapsed ? link.label : ''}
                 >
@@ -141,26 +143,38 @@ export default function Sidebar() {
           )}
         </nav>
 
-        {/* Bottom Profile Snippet & Logout */}
+        {/* Bottom Profile Snippet & Logout (No photo for Admin) */}
         <div className="sidebar-footer" style={{ justifyContent: collapsed ? 'center' : 'space-between' }}>
           {!collapsed ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflow: 'hidden' }}>
-              <img 
-                src={avatarUrl} 
-                alt="Avatar"
-                style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #cc9966' }}
-              />
+              {isAdmin ? (
+                <div style={{ background: '#fff4c2', color: '#9c6137', width: 34, height: 34, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid #cc9966' }}>
+                  <ShieldCheck size={18} />
+                </div>
+              ) : (
+                <img 
+                  src={avatarUrl} 
+                  alt="Avatar"
+                  style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #cc9966' }}
+                />
+              )}
               <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'white' }}>{activeUser?.name || 'Employee'}</div>
-                <div style={{ fontSize: 11, color: '#cc9966', fontWeight: 600 }}>{activeUser?.employeeId || 'EMP-101'}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'white' }}>{activeUser?.name || 'ElyVia HR Admin'}</div>
+                <div style={{ fontSize: 11, color: '#cc9966', fontWeight: 600 }}>{activeUser?.employeeId || 'EMP-ADMIN'}</div>
               </div>
             </div>
           ) : (
-            <img 
-              src={avatarUrl} 
-              alt="Avatar"
-              style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #cc9966' }}
-            />
+            isAdmin ? (
+              <div style={{ background: '#fff4c2', color: '#9c6137', width: 34, height: 34, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #cc9966' }}>
+                <ShieldCheck size={18} />
+              </div>
+            ) : (
+              <img 
+                src={avatarUrl} 
+                alt="Avatar"
+                style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #cc9966' }}
+              />
+            )
           )}
 
           <button 

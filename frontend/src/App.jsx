@@ -19,6 +19,7 @@ import Leaves from './pages/Leaves';
 import Payroll from './pages/Payroll';
 import Notifications from './pages/Notifications';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminEmployees from './pages/AdminEmployees';
 import AdminAttendance from './pages/AdminAttendance';
 import AdminLeaves from './pages/AdminLeaves';
 import AdminPayroll from './pages/AdminPayroll';
@@ -50,6 +51,7 @@ export default function App() {
             <Route path="/signup" element={<Signup />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
 
+            {/* EMPLOYEE PORTAL ROUTES */}
             <Route path="/dashboard" element={<ProtectedRoute><AppLayout><EmployeeDashboard /></AppLayout></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><AppLayout><Profile /></AppLayout></ProtectedRoute>} />
             <Route path="/attendance" element={<ProtectedRoute><AppLayout><Attendance /></AppLayout></ProtectedRoute>} />
@@ -57,11 +59,13 @@ export default function App() {
             <Route path="/payroll" element={<ProtectedRoute><AppLayout><Payroll /></AppLayout></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><AppLayout><Notifications /></AppLayout></ProtectedRoute>} />
 
+            {/* ADMIN / HR MANAGEMENT ROUTES (DISTINCT DEDICATED PAGES) */}
             <Route path="/admin" element={<ProtectedRoute adminOnly><AppLayout><AdminDashboard /></AppLayout></ProtectedRoute>} />
-            <Route path="/admin/employees" element={<ProtectedRoute adminOnly><AppLayout><AdminDashboard /></AppLayout></ProtectedRoute>} />
+            <Route path="/admin/employees" element={<ProtectedRoute adminOnly><AppLayout><AdminEmployees /></AppLayout></ProtectedRoute>} />
             <Route path="/admin/attendance" element={<ProtectedRoute adminOnly><AppLayout><AdminAttendance /></AppLayout></ProtectedRoute>} />
             <Route path="/admin/leaves" element={<ProtectedRoute adminOnly><AppLayout><AdminLeaves /></AppLayout></ProtectedRoute>} />
             <Route path="/admin/payroll" element={<ProtectedRoute adminOnly><AppLayout><AdminPayroll /></AppLayout></ProtectedRoute>} />
+            <Route path="/admin/notifications" element={<ProtectedRoute adminOnly><AppLayout><Notifications /></AppLayout></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute adminOnly><AppLayout><ReportsAnalytics /></AppLayout></ProtectedRoute>} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
