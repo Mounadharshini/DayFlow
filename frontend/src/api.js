@@ -12,7 +12,7 @@ async function request(path, { method = 'GET', body, token } = {}) {
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(data.error || 'Something went wrong');
+    throw new Error(data.error || data.message || `Server request failed with status ${res.status}`);
   }
   return data;
 }
@@ -21,6 +21,7 @@ export const api = {
   // Auth & Verification
   signup: (payload) => request('/auth/signup', { method: 'POST', body: payload }),
   login: (payload) => request('/auth/login', { method: 'POST', body: payload }),
+  loginVerifyOtp: (payload) => request('/auth/login-verify-otp', { method: 'POST', body: payload }),
   googleAuth: (payload) => request('/auth/google', { method: 'POST', body: payload }),
   sendVerifyEmail: (token) => request('/auth/verify-send', { method: 'POST', token }),
   confirmVerifyEmail: (token, otp) => request('/auth/verify-confirm', { method: 'POST', body: { otp }, token }),

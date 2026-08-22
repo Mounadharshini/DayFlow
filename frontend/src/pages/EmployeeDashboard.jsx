@@ -1,234 +1,249 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, Calendar, FileText, CreditCard, User, AlertCircle, CheckCircle2, ArrowRight, Play, Square } from 'lucide-react';
-import Navbar from '../components/Navbar';
-import Badge from '../components/Badge';
+import { 
+  User, Calendar, FileCheck, CreditCard, Clock, Play, Square, 
+  Sparkles, CheckCircle2 
+} from 'lucide-react';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
+import { useToast } from '../components/Toast';
+import { getAvatarUrl } from '../utils/avatar';
 
 export default function EmployeeDashboard() {
-  const { auth, login } = useAuth();
-  const [profile, setProfile] = useState(null);
-  const [today, setToday] = useState(null);
-  const [leaves, setLeaves] = useState([]);
-  const [paystub, setPaystub] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [clockTime, setClockTime] = useState(new Date().toLocaleTimeString());
-  const [otpInput, setOtpInput] = useState('');
-  const [verifying, setVerifying] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-  const [verifyMsg, setVerifyMsg] = useState('');
+  const { user, token } = useAuth();
+  const { showToast } = useToast();
 
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [clockLoading, setClockLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const loadData = async () => {
+  const fetchDashboard = async () => {
+    if (!token) return;
     try {
-      const p = await api.getMyProfile(auth.token);
-      setProfile(p);
-      const att = await api.getMyAttendance(auth.token);
-      setToday(att.find((r) => r.date === todayStr) || null);
-      const lv = await api.getMyLeaves(auth.token);
-      setLeaves((lv.leaves || []).slice(0, 5));
-      const pay = await api.getMyPaystub(auth.token);
-      setPaystub(pay);
-    } finally {
-      setLoading(false);
+      const data = await api.getEmployeeDashboard(token);
+      setDashboardData(data);
+    } catch (err) {
+      console.error(err);
     }
   };
 
   useEffect(() => {
-    loadData();
-    const timer = setInterval(() => setClockTime(new Date().toLocaleTimeString()), 1000);
-    return () => clearInterval(timer);
-  }, [auth.token]);
+    fetchDashboard();
+  }, [token]);
 
   const handleCheckIn = async () => {
+    setClockLoading(true);
     try {
-      await api.checkIn(auth.token);
-      await loadData();
-    } catch (e) {
-      alert(e.message);
+      await api.checkIn(token);
+      showToast('Successfully clocked in for today!', 'success');
+      await fetchDashboard();
+    } catch (err) {
+      showToast(err.message || 'Check-in failed', 'error');
+    } finally {
+      setClockLoading(false);
     }
   };
 
   const handleCheckOut = async () => {
+    setClockLoading(true);
     try {
-      await api.checkOut(auth.token);
-      await loadData();
-    } catch (e) {
-      alert(e.message);
-    }
-  };
-
-  const handleSendVerify = async () => {
-    try {
-      const res = await api.sendVerifyEmail(auth.token);
-      setOtpSent(true);
-      setVerifyMsg(`Demo OTP sent: ${res.demoOtp}`);
-    } catch (e) {
-      setVerifyMsg(e.message);
-    }
-  };
-
-  const handleConfirmVerify = async () => {
-    setVerifying(true);
-    try {
-      const res = await api.confirmVerifyEmail(auth.token, otpInput);
-      setVerifyMsg(res.message);
-      const p = await api.getMyProfile(auth.token);
-      setProfile(p);
-    } catch (e) {
-      setVerifyMsg(e.message);
+      await api.checkOut(token);
+      showToast('Successfully clocked out for today!', 'success');
+      await fetchDashboard();
+    } catch (err) {
+      showToast(err.message || 'Check-out failed', 'error');
     } finally {
-      setVerifying(false);
+      setClockLoading(false);
     }
   };
+
+  // Determine Greeting based on time of day
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
+
+  const profile = dashboardData?.user || user;
+  const avatarUrl = getAvatarUrl(profile);
+  const todayRecord = dashboardData?.todayRecord;
+  const leaveSummary = dashboardData?.leaveSummary || { pending: 0, approved: 0, rejected: 0 };
+  const recentActivities = dashboardData?.recentActivities || [];
 
   return (
-    <div>
-      <Navbar />
-      <div className="container">
-        {/* Email Verification Banner */}
-        {profile && !profile.isEmailVerified && (
-          <div style={{ background: '#fffbeb', border: '1px solid #fde68a', padding: 16, borderRadius: 12, marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <AlertCircle color="#d97706" size={20} />
-              <div>
-                <strong style={{ color: '#92400e', fontSize: 14 }}>Your email address is unverified</strong>
-                <p style={{ color: '#b45309', fontSize: 13 }}>Verify your email to receive HR notification alerts and salary updates.</p>
+    <div className="container" style={{ paddingBottom: 60 }}>
+      {/* 1. Time-Aware Welcome Hero Banner (Always renders immediately!) */}
+      <div className="card" style={{
+        background: 'linear-gradient(135deg, #231710 0%, #3d291c 60%, #9c6137 100%)',
+        color: 'white',
+        borderRadius: 24,
+        padding: 32,
+        marginBottom: 28,
+        boxShadow: '0 12px 32px rgba(35, 23, 16, 0.15)',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <div style={{ position: 'relative', zIndex: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+            <img 
+              src={avatarUrl} 
+              alt={profile?.name || 'User'} 
+              style={{ width: 72, height: 72, borderRadius: '50%', objectFit: 'cover', border: '3px solid #cc9966' }}
+            />
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 13, color: '#fff4c2', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                  {greeting}, 👋
+                </span>
+                <span className="badge badge-present" style={{ fontSize: 11, background: 'rgba(255, 244, 194, 0.2)', color: '#fff4c2' }}>
+                  {profile?.role === 'Admin' ? 'HR Administrator 👑' : 'Active Employee'}
+                </span>
+              </div>
+              <h1 style={{ fontSize: 28, fontWeight: 800, color: 'white', margin: '4px 0 6px', letterSpacing: '-0.5px' }}>
+                {profile?.name || 'Employee'}
+              </h1>
+              <div style={{ fontSize: 13, color: '#d1c1b5', fontWeight: 500 }}>
+                {profile?.designation || 'Staff Member'} &bull; {profile?.department || 'Human Resources'} &bull; ID: <strong>{profile?.employeeId || 'EMP-101'}</strong>
               </div>
             </div>
-            {!otpSent ? (
-              <button className="btn-warning btn-sm" onClick={handleSendVerify}>Send Verification OTP</button>
-            ) : (
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <input placeholder="Enter OTP" value={otpInput} onChange={(e) => setOtpInput(e.target.value)} style={{ width: 110, padding: 6 }} />
-                <button className="btn-primary btn-sm" onClick={handleConfirmVerify} disabled={verifying}>Verify</button>
+          </div>
+
+          <div style={{ background: 'rgba(255, 244, 194, 0.1)', border: '1px solid rgba(255, 244, 194, 0.2)', padding: '16px 24px', borderRadius: 16, textAlign: 'right' }}>
+            <div style={{ fontSize: 11, color: '#cc9966', fontWeight: 800, textTransform: 'uppercase' }}>TODAY'S DATE</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: 'white', marginTop: 2 }}>
+              {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {error && <div className="error-msg" style={{ marginBottom: 20 }}>{error}</div>}
+
+      {/* 2. Quick Access Workspace Hub */}
+      <h3 style={{ fontSize: 18, fontWeight: 800, color: '#2b1b12', marginBottom: 16 }}>Quick Access Hub</h3>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 32 }}>
+        <Link to="/profile" className="card" style={{ textDecoration: 'none', background: '#ffffff', border: '1px solid #eee5d8', borderRadius: 18, padding: 20, transition: 'all 0.2s ease' }}>
+          <div style={{ background: '#fff4c2', color: '#b37a4c', width: 44, height: 44, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+            <User size={22} />
+          </div>
+          <div style={{ fontWeight: 800, fontSize: 16, color: '#2b1b12' }}>My Profile</div>
+          <div style={{ fontSize: 13, color: '#7a6758', marginTop: 4 }}>Job details &amp; docs</div>
+        </Link>
+
+        <Link to="/attendance" className="card" style={{ textDecoration: 'none', background: '#ffffff', border: '1px solid #eee5d8', borderRadius: 18, padding: 20, transition: 'all 0.2s ease' }}>
+          <div style={{ background: '#f4ece4', color: '#9c6137', width: 44, height: 44, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+            <Calendar size={22} />
+          </div>
+          <div style={{ fontWeight: 800, fontSize: 16, color: '#2b1b12' }}>Attendance</div>
+          <div style={{ fontSize: 13, color: '#7a6758', marginTop: 4 }}>Clock in &amp; work log</div>
+        </Link>
+
+        <Link to="/leaves" className="card" style={{ textDecoration: 'none', background: '#ffffff', border: '1px solid #eee5d8', borderRadius: 18, padding: 20, transition: 'all 0.2s ease' }}>
+          <div style={{ background: '#fff4c2', color: '#b37a4c', width: 44, height: 44, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+            <FileCheck size={22} />
+          </div>
+          <div style={{ fontWeight: 800, fontSize: 16, color: '#2b1b12' }}>Leave Requests</div>
+          <div style={{ fontSize: 13, color: '#7a6758', marginTop: 4 }}>Apply &amp; check status</div>
+        </Link>
+
+        <Link to="/payroll" className="card" style={{ textDecoration: 'none', background: '#ffffff', border: '1px solid #eee5d8', borderRadius: 18, padding: 20, transition: 'all 0.2s ease' }}>
+          <div style={{ background: '#f4ece4', color: '#9c6137', width: 44, height: 44, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+            <CreditCard size={22} />
+          </div>
+          <div style={{ fontWeight: 800, fontSize: 16, color: '#2b1b12' }}>Salary / Payroll</div>
+          <div style={{ fontSize: 13, color: '#7a6758', marginTop: 4 }}>Paystubs &amp; tax breakdown</div>
+        </Link>
+      </div>
+
+      {/* 3. Section Grid: Today's Clock-In Log & Leave Summary */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24, marginBottom: 32 }}>
+        {/* Today's Clock Tracker */}
+        <div style={{ background: '#ffffff', border: '1px solid #eee5d8', borderRadius: 20, padding: 24 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: '#2b1b12', margin: 0 }}>Today's Clock Status</h3>
+            <span className={`badge ${todayRecord?.checkIn ? 'badge-present' : 'badge-pending'}`}>
+              {todayRecord?.checkIn ? (todayRecord.checkOut ? 'Completed' : 'Present (Working)') : 'Not Clocked In'}
+            </span>
+          </div>
+
+          <div style={{ background: '#fdfaf6', border: '1px solid #eee5d8', borderRadius: 14, padding: 18, marginBottom: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+              <span style={{ fontSize: 13, color: '#7a6758', fontWeight: 600 }}>Check-In Time:</span>
+              <strong style={{ fontSize: 14, color: '#2b1b12' }}>{todayRecord?.checkIn || '-- : -- AM'}</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 13, color: '#7a6758', fontWeight: 600 }}>Check-Out Time:</span>
+              <strong style={{ fontSize: 14, color: '#2b1b12' }}>{todayRecord?.checkOut || '-- : -- PM'}</strong>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <button 
+              className="btn-primary btn-sm" 
+              disabled={clockLoading || Boolean(todayRecord?.checkIn)} 
+              onClick={handleCheckIn}
+              style={{ background: 'linear-gradient(135deg, #b37a4c 0%, #9c6137 100%)', gap: 6 }}
+            >
+              <Play size={14} /> Punch In
+            </button>
+            <button 
+              className="btn-secondary btn-sm" 
+              disabled={clockLoading || !todayRecord?.checkIn || Boolean(todayRecord?.checkOut)} 
+              onClick={handleCheckOut}
+              style={{ color: '#dc2626', borderColor: '#fca5a5', gap: 6 }}
+            >
+              <Square size={14} /> Punch Out
+            </button>
+          </div>
+        </div>
+
+        {/* Leave Quota Overview */}
+        <div style={{ background: '#ffffff', border: '1px solid #eee5d8', borderRadius: 20, padding: 24 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: '#2b1b12', margin: 0 }}>Leave Quotas & Status</h3>
+            <Link to="/leaves" style={{ fontSize: 13, fontWeight: 700, color: '#b37a4c', textDecoration: 'none' }}>
+              Apply Leave &rarr;
+            </Link>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, textAlign: 'center' }}>
+            <div style={{ background: '#fff4c2', border: '1px solid #eee5d8', padding: 14, borderRadius: 12 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#7a6758', textTransform: 'uppercase' }}>PENDING</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: '#9c6137', marginTop: 2 }}>{leaveSummary.pending}</div>
+            </div>
+
+            <div style={{ background: '#f4ece4', border: '1px solid #d8c3b2', padding: 14, borderRadius: 12 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#7a6758', textTransform: 'uppercase' }}>APPROVED</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: '#9c6137', marginTop: 2 }}>{leaveSummary.approved}</div>
+            </div>
+
+            <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', padding: 14, borderRadius: 12 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#dc2626', textTransform: 'uppercase' }}>REJECTED</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: '#dc2626', marginTop: 2 }}>{leaveSummary.rejected}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Recent Workspace Activity Feed */}
+      <div style={{ background: '#ffffff', border: '1px solid #eee5d8', borderRadius: 20, padding: 24 }}>
+        <h3 style={{ fontSize: 18, fontWeight: 800, color: '#2b1b12', marginBottom: 16 }}>Recent Activity Stream</h3>
+        {recentActivities.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {recentActivities.slice(0, 5).map(act => (
+              <div key={act.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', background: '#fdfaf6', borderRadius: 12, border: '1px solid #eee5d8' }}>
+                <div style={{ background: '#b37a4c', color: 'white', width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <CheckCircle2 size={16} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: '#2b1b12' }}>{act.title}</div>
+                  <div style={{ fontSize: 12, color: '#7a6758', marginTop: 2 }}>{act.message}</div>
+                </div>
               </div>
-            )}
-            {verifyMsg && <div style={{ width: '100%', fontSize: 12, color: '#d97706', fontWeight: 600 }}>{verifyMsg}</div>}
+            ))}
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', padding: 24, color: '#7a6758', fontSize: 13 }}>
+            No recent activity logged yet.
           </div>
         )}
-
-        <div className="flex-between">
-          <div>
-            <h2 style={{ fontSize: 26, fontWeight: 800, color: '#0f172a' }}>
-              Welcome back, {auth.user.name.split(' ')[0]} 👋
-            </h2>
-            <p className="muted">Here is your daily HR summary and attendance widget.</p>
-          </div>
-          <div style={{ textAlign: 'right', background: 'white', padding: '10px 18px', borderRadius: 12, border: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>CURRENT SYSTEM TIME</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: '#4f46e5' }}>{clockTime}</div>
-          </div>
-        </div>
-
-        {/* Quick Check-In / Check-Out Widget */}
-        <div className="card" style={{ marginTop: 24, background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)', border: '1px solid #cbd5e1' }}>
-          <div className="flex-between" style={{ flexWrap: 'wrap', gap: 16 }}>
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                TODAY'S WORK LOG — {todayStr}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
-                <span style={{ fontSize: 16, fontWeight: 700 }}>Status:</span>
-                {today ? <Badge status={today.status} /> : <Badge status="Absent" />}
-                {today?.checkIn && (
-                  <span className="muted" style={{ fontSize: 13 }}>
-                    Check-in: <strong>{today.checkIn}</strong> {today.checkOut ? `• Check-out: ${today.checkOut}` : ''}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 12 }}>
-              <button
-                className="btn-success"
-                disabled={Boolean(today?.checkIn)}
-                onClick={handleCheckIn}
-                style={{ padding: '10px 18px', opacity: today?.checkIn ? 0.6 : 1 }}
-              >
-                <Play size={16} /> Check In
-              </button>
-              <button
-                className="btn-danger"
-                disabled={!today?.checkIn || Boolean(today?.checkOut)}
-                onClick={handleCheckOut}
-                style={{ padding: '10px 18px', opacity: !today?.checkIn || today?.checkOut ? 0.6 : 1 }}
-              >
-                <Square size={16} /> Check Out
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Access Cards */}
-        <div className="grid-cards">
-          <Link to="/profile" className="card">
-            <div className="card-header-icon">
-              <h3>My Profile</h3>
-              <div className="icon-wrapper icon-primary"><User size={20} /></div>
-            </div>
-            <div className="big" style={{ fontSize: 18 }}>{auth.user.name}</div>
-            <p className="muted" style={{ marginTop: 4 }}>{profile?.designation || 'Staff'} • {profile?.department || 'General'}</p>
-          </Link>
-
-          <Link to="/attendance" className="card">
-            <div className="card-header-icon">
-              <h3>Attendance Log</h3>
-              <div className="icon-wrapper icon-success"><Calendar size={20} /></div>
-            </div>
-            <div className="big">{today ? today.status : 'Not Checked In'}</div>
-            <p className="muted" style={{ marginTop: 4 }}>Click to view 30-day log</p>
-          </Link>
-
-          <Link to="/leaves" className="card">
-            <div className="card-header-icon">
-              <h3>Leave Balances</h3>
-              <div className="icon-wrapper icon-warning"><FileText size={20} /></div>
-            </div>
-            <div className="big">{profile?.paidLeaveRemaining ?? 12} Paid</div>
-            <p className="muted" style={{ marginTop: 4 }}>{profile?.sickLeaveRemaining ?? 8} Sick leaves available</p>
-          </Link>
-
-          <Link to="/payroll" className="card">
-            <div className="card-header-icon">
-              <h3>Net Monthly Pay</h3>
-              <div className="icon-wrapper icon-primary"><CreditCard size={20} /></div>
-            </div>
-            <div className="big">₹{(paystub?.netPay || 0).toLocaleString()}</div>
-            <p className="muted" style={{ marginTop: 4 }}>View salary slip details</p>
-          </Link>
-        </div>
-
-        {/* Recent Leave Requests */}
-        <div className="flex-between">
-          <h3 className="section-title">Recent Leave Requests</h3>
-          <Link to="/leaves" style={{ fontWeight: 600, fontSize: 14, display: 'flex', alignItems: 'center', gap: 4 }}>
-            Apply New Leave <ArrowRight size={16} />
-          </Link>
-        </div>
-
-        <div className="table-container">
-          <table>
-            <thead>
-              <tr><th>Type</th><th>Duration</th><th>Dates</th><th>Remarks</th><th>Status</th></tr>
-            </thead>
-            <tbody>
-              {leaves.map((l) => (
-                <tr key={l.id}>
-                  <td style={{ fontWeight: 700 }}>{l.type} Leave</td>
-                  <td>{l.daysCount || 1} day(s)</td>
-                  <td>{l.startDate} → {l.endDate}</td>
-                  <td>{l.remarks || '—'}</td>
-                  <td><Badge status={l.status} /></td>
-                </tr>
-              ))}
-              {leaves.length === 0 && (
-                <tr><td colSpan={5} className="muted" style={{ textAlign: 'center', padding: 24 }}>No recent leave requests found.</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
       </div>
     </div>
   );

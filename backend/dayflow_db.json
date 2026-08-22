@@ -134,7 +134,7 @@
       "pf": 3600,
       "tax": 6000,
       "isEmailVerified": 0,
-      "otpCode": "853236",
+      "otpCode": "845092",
       "documents": [],
       "profilePicture": "",
       "paidLeaveRemaining": 12,
@@ -636,6 +636,15 @@
       "type": "warning",
       "isRead": 0,
       "createdAt": "2026-08-22T05:29:44.240Z"
+    },
+    {
+      "id": 11,
+      "userId": 6,
+      "title": "Verification Code Sent",
+      "message": "Your email verification OTP is 845092",
+      "type": "warning",
+      "isRead": 0,
+      "createdAt": "2026-08-22T06:09:46.657Z"
     }
   ]
 }

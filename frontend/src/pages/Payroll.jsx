@@ -1,248 +1,174 @@
 import { useEffect, useState } from 'react';
-import { CreditCard, FileText, Printer, Shield, DollarSign, Edit3, ArrowUpRight } from 'lucide-react';
-import Navbar from '../components/Navbar';
+import { CreditCard, FileText, Printer, DollarSign, ArrowUpRight, CheckCircle2 } from 'lucide-react';
 import PaystubModal from '../components/PaystubModal';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
 
 export default function Payroll() {
-  const { auth } = useAuth();
-  const isAdmin = auth?.user?.role === 'Admin';
+  const { token, user } = useAuth();
+  const isAdmin = user?.role === 'Admin';
 
   const [paystub, setPaystub] = useState(null);
-  const [adminPayroll, setAdminPayroll] = useState(null);
   const [selectedPaystub, setSelectedPaystub] = useState(null);
-  const [editingEmp, setEditingEmp] = useState(null);
-  const [form, setForm] = useState({});
-  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
-    if (isAdmin) {
-      const res = await api.getAllPayrolls(auth.token);
-      setAdminPayroll(res);
-    } else {
-      const res = await api.getMyPaystub(auth.token);
-      setPaystub(res);
-    }
-  };
-
-  useEffect(() => { loadData(); }, [auth.token, isAdmin]);
-
-  const handleEditSalary = (emp) => {
-    setEditingEmp(emp);
-    setForm({
-      salary: emp.annualSalary,
-      basicSalary: emp.earnings.basic * 12,
-      hra: emp.earnings.hra * 12,
-      allowances: emp.earnings.allowances * 12,
-      pf: emp.deductions.pf * 12,
-      tax: emp.deductions.tax * 12
-    });
-  };
-
-  const handleSaveSalary = async (e) => {
-    e.preventDefault();
-    setSaving(true);
+    if (!token) return;
+    setLoading(true);
     try {
-      // Find employee db id by matching employeeId
-      const empList = await api.getAllEmployees(auth.token);
-      const target = empList.find(u => u.employeeId === editingEmp.employeeId);
-      if (target) {
-        await api.updateEmployee(auth.token, target.id, {
-          name: target.name,
-          phone: target.phone,
-          address: target.address,
-          department: target.department,
-          designation: target.designation,
-          salary: Number(form.salary),
-          basicSalary: Number(form.basicSalary),
-          hra: Number(form.hra),
-          allowances: Number(form.allowances),
-          pf: Number(form.pf),
-          tax: Number(form.tax)
-        });
-      }
-      setEditingEmp(null);
-      await loadData();
+      const res = await api.getMyPaystub(token);
+      setPaystub(res);
+    } catch (e) {
+      console.error(e);
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadData();
+  }, [token]);
 
   return (
-    <div>
-      <Navbar />
+    <div className="container" style={{ paddingBottom: 60 }}>
       {selectedPaystub && <PaystubModal paystub={selectedPaystub} onClose={() => setSelectedPaystub(null)} />}
 
-      {/* Salary Edit Modal for Admin */}
-      {editingEmp && (
-        <div className="modal-backdrop">
-          <div className="modal-content" style={{ maxWidth: 500 }}>
-            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>Update Salary Structure: {editingEmp.name}</h3>
-            <form onSubmit={handleSaveSalary}>
-              <label>Annual Gross Salary (₹)</label>
-              <input
-                type="number"
-                value={form.salary}
-                onChange={(e) => {
-                  const s = Number(e.target.value);
-                  setForm({
-                    ...form,
-                    salary: s,
-                    basicSalary: Math.round(s * 0.5),
-                    hra: Math.round(s * 0.25),
-                    allowances: Math.round(s * 0.25),
-                    pf: Math.round(s * 0.06),
-                    tax: Math.round(s * 0.10)
-                  });
-                }}
-                required
-              />
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
-                <div>
-                  <label>Annual Basic (50%)</label>
-                  <input type="number" value={form.basicSalary} onChange={(e) => setForm({ ...form, basicSalary: Number(e.target.value) })} />
-                </div>
-                <div>
-                  <label>Annual HRA (25%)</label>
-                  <input type="number" value={form.hra} onChange={(e) => setForm({ ...form, hra: Number(e.target.value) })} />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
-                <div>
-                  <label>Annual Allowances</label>
-                  <input type="number" value={form.allowances} onChange={(e) => setForm({ ...form, allowances: Number(e.target.value) })} />
-                </div>
-                <div>
-                  <label>Annual PF</label>
-                  <input type="number" value={form.pf} onChange={(e) => setForm({ ...form, pf: Number(e.target.value) })} />
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
-                <button className="btn-primary" type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save Structure'}</button>
-                <button type="button" className="btn-secondary" onClick={() => setEditingEmp(null)}>Cancel</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      <div className="container">
-        <div className="flex-between">
-          <div>
-            <h2 style={{ fontSize: 26, fontWeight: 800, color: '#0f172a' }}>
-              {isAdmin ? 'HR Payroll Administration' : 'My Payroll & Compensation'}
-            </h2>
-            <p className="muted">
-              {isAdmin ? 'Manage organization salary structures, deductions, and paystubs.' : 'View your monthly salary breakdown, tax deductions, and downloadable paystubs.'}
-            </p>
-          </div>
-          {!isAdmin && paystub && (
-            <button className="btn-primary" onClick={() => setSelectedPaystub(paystub)} style={{ width: 'auto' }}>
-              <Printer size={16} /> View & Print Salary Slip
-            </button>
-          )}
+      {/* Header Banner */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
+        <div>
+          <h1 style={{ fontSize: 28, fontWeight: 800, color: '#2b1b12', letterSpacing: '-0.5px' }}>
+            Salary & Paystubs
+          </h1>
+          <p className="muted" style={{ marginTop: 4, fontSize: 14 }}>
+            Read-only monthly compensation statements and tax deduction breakdowns
+          </p>
         </div>
 
-        {/* Employee Read-Only Payroll View */}
-        {!isAdmin && paystub && (
-          <div>
-            <div className="grid-cards" style={{ marginTop: 24 }}>
-              <div className="card">
-                <h3>Monthly Gross Salary</h3>
-                <div className="big">₹{paystub.monthlyGross.toLocaleString()}</div>
-                <p className="muted">Before tax & PF deductions</p>
-              </div>
-              <div className="card">
-                <h3>Total Monthly Deductions</h3>
-                <div className="big" style={{ color: '#ef4444' }}>-₹{paystub.deductions.totalDeductions.toLocaleString()}</div>
-                <p className="muted">PF (₹{paystub.deductions.pf}) + Tax (₹{paystub.deductions.tax})</p>
-              </div>
-              <div className="card">
-                <h3>Net Monthly Take-Home</h3>
-                <div className="big" style={{ color: '#10b981' }}>₹{paystub.netPay.toLocaleString()}</div>
-                <p className="muted">Direct bank disbursement</p>
-              </div>
-            </div>
-
-            <div className="card" style={{ marginTop: 24 }}>
-              <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>Salary Component Breakdown</h3>
-              <div className="detail-grid">
-                <div><span className="muted">Basic Salary</span><strong>₹{paystub.earnings.basic.toLocaleString()} / mo</strong></div>
-                <div><span className="muted">House Rent Allowance (HRA)</span><strong>₹{paystub.earnings.hra.toLocaleString()} / mo</strong></div>
-                <div><span className="muted">Special Allowances</span><strong>₹{paystub.earnings.allowances.toLocaleString()} / mo</strong></div>
-                <div><span className="muted">Annual Projected Salary</span><strong>₹{paystub.annualSalary.toLocaleString()} / yr</strong></div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Admin Organization Payroll Matrix */}
-        {isAdmin && adminPayroll && (
-          <div>
-            <div className="grid-cards" style={{ marginTop: 24 }}>
-              <div className="card">
-                <h3>Total Staff</h3>
-                <div className="big">{adminPayroll.summary.totalEmployees}</div>
-              </div>
-              <div className="card">
-                <h3>Monthly Gross Payout</h3>
-                <div className="big">₹{adminPayroll.summary.totalMonthlyGross.toLocaleString()}</div>
-              </div>
-              <div className="card">
-                <h3>Monthly Net Disbursement</h3>
-                <div className="big" style={{ color: '#10b981' }}>₹{adminPayroll.summary.totalNetDisbursement.toLocaleString()}</div>
-              </div>
-              <div className="card">
-                <h3>Monthly Tax/PF Deductions</h3>
-                <div className="big" style={{ color: '#ef4444' }}>₹{adminPayroll.summary.totalDeductions.toLocaleString()}</div>
-              </div>
-            </div>
-
-            <h3 className="section-title">Employee Salary Directory</h3>
-            <div className="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Emp ID</th>
-                    <th>Employee Name</th>
-                    <th>Department</th>
-                    <th>Monthly Gross</th>
-                    <th>PF & Tax</th>
-                    <th>Net Pay</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {adminPayroll.payrolls.map((p) => (
-                    <tr key={p.employeeId}>
-                      <td style={{ fontWeight: 700 }}>{p.employeeId}</td>
-                      <td style={{ fontWeight: 700, color: '#0f172a' }}>{p.name}</td>
-                      <td>{p.department || 'General'}</td>
-                      <td style={{ fontWeight: 700 }}>₹{p.monthlyGross.toLocaleString()}</td>
-                      <td style={{ color: '#ef4444' }}>₹{p.deductions.totalDeductions.toLocaleString()}</td>
-                      <td style={{ fontWeight: 700, color: '#10b981' }}>₹{p.netPay.toLocaleString()}</td>
-                      <td>
-                        <div style={{ display: 'flex', gap: 6 }}>
-                          <button className="btn-secondary btn-sm" onClick={() => setSelectedPaystub(p)}>
-                            <Printer size={14} /> Paystub
-                          </button>
-                          <button className="btn-secondary btn-sm" onClick={() => handleEditSalary(p)}>
-                            <Edit3 size={14} /> Edit Structure
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+        {paystub && (
+          <button 
+            className="btn-primary btn-sm" 
+            onClick={() => setSelectedPaystub(paystub)} 
+            style={{ background: 'linear-gradient(135deg, #b37a4c 0%, #9c6137 100%)', padding: '10px 20px', gap: 8 }}
+          >
+            <Printer size={16} /> View & Print Paystub PDF
+          </button>
         )}
       </div>
+
+      {loading ? (
+        <div style={{ padding: 40, textAlign: 'center', color: '#7a6758', fontSize: 14 }}>
+          Loading salary statements...
+        </div>
+      ) : paystub ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {/* Main Compensation Overview Banner */}
+          <div className="card" style={{
+            background: 'linear-gradient(135deg, #231710 0%, #3d291c 60%, #9c6137 100%)',
+            color: 'white',
+            borderRadius: 24,
+            padding: 32,
+            boxShadow: '0 12px 32px rgba(35, 23, 16, 0.15)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 20 }}>
+              <div>
+                <div style={{ background: 'rgba(255, 244, 194, 0.15)', border: '1px solid rgba(255, 244, 194, 0.3)', padding: '4px 12px', borderRadius: 999, display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700, color: '#fff4c2', marginBottom: 12 }}>
+                  <CheckCircle2 size={14} color="#cc9966" /> PAYROLL PROCESSED & DISBURSED
+                </div>
+                <div style={{ fontSize: 13, color: '#d1c1b5', fontWeight: 700, textTransform: 'uppercase' }}>AUGUST 2026 NET TAKE-HOME</div>
+                <h2 style={{ fontSize: 40, fontWeight: 800, color: '#fff4c2', margin: '4px 0 8px' }}>
+                  ₹ {(paystub.netPay || paystub.netSalary || 100800).toLocaleString('en-IN')}
+                </h2>
+                <div style={{ fontSize: 13, color: '#d1c1b5' }}>
+                  Direct Bank Disbursement &bull; Employee ID: <strong>{user?.employeeId || 'EMP-101'}</strong>
+                </div>
+              </div>
+
+              <div style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', padding: '20px 28px', borderRadius: 18, textAlign: 'center' }}>
+                <div style={{ fontSize: 12, color: '#cc9966', fontWeight: 800, textTransform: 'uppercase' }}>ANNUAL PACKAGE</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: 'white', marginTop: 4 }}>
+                  ₹ {(paystub.annualSalary || 120000).toLocaleString('en-IN')} / yr
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Inline Summary Stat Row */}
+          <div style={{
+            background: '#ffffff',
+            border: '1px solid #eee5d8',
+            borderRadius: 20,
+            padding: 24,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: 20
+          }}>
+            <div style={{ background: '#fdfaf6', border: '1px solid #eee5d8', padding: 20, borderRadius: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#7a6758', textTransform: 'uppercase' }}>MONTHLY GROSS SALARY</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: '#2b1b12', marginTop: 4 }}>
+                ₹ {(paystub.monthlyGross || 120000).toLocaleString()}
+              </div>
+              <div style={{ fontSize: 12, color: '#7a6758', marginTop: 4 }}>Before deductions</div>
+            </div>
+
+            <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', padding: 20, borderRadius: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#dc2626', textTransform: 'uppercase' }}>TOTAL DEDUCTIONS</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: '#dc2626', marginTop: 4 }}>
+                -₹ {(paystub.deductions?.totalDeductions || 19200).toLocaleString()}
+              </div>
+              <div style={{ fontSize: 12, color: '#dc2626', marginTop: 4 }}>PF + Tax Deductions</div>
+            </div>
+
+            <div style={{ background: '#f4ece4', border: '1px solid #d8c3b2', padding: 20, borderRadius: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#9c6137', textTransform: 'uppercase' }}>NET DISBURSEMENT</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: '#9c6137', marginTop: 4 }}>
+                ₹ {(paystub.netPay || 100800).toLocaleString()}
+              </div>
+              <div style={{ fontSize: 12, color: '#9c6137', marginTop: 4 }}>Net Salary Received</div>
+            </div>
+          </div>
+
+          {/* Component Breakdown Tables */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+            {/* Earnings Breakdown */}
+            <div style={{ background: '#ffffff', border: '1px solid #eee5d8', borderRadius: 20, padding: 24 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: '#2b1b12', marginBottom: 16 }}>Earnings Component Breakdown</h3>
+              <div className="paystub-row">
+                <span>Basic Salary (50%)</span>
+                <strong>₹ {(paystub.earnings?.basic || 60000).toLocaleString()} / mo</strong>
+              </div>
+              <div className="paystub-row">
+                <span>House Rent Allowance (HRA 25%)</span>
+                <strong>₹ {(paystub.earnings?.hra || 30000).toLocaleString()} / mo</strong>
+              </div>
+              <div className="paystub-row">
+                <span>Special Allowances (25%)</span>
+                <strong>₹ {(paystub.earnings?.allowances || 30000).toLocaleString()} / mo</strong>
+              </div>
+            </div>
+
+            {/* Deductions Breakdown */}
+            <div style={{ background: '#ffffff', border: '1px solid #eee5d8', borderRadius: 20, padding: 24 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: '#dc2626', marginBottom: 16 }}>Deductions & Taxes</h3>
+              <div className="paystub-row">
+                <span>Provident Fund (PF 6%)</span>
+                <strong style={{ color: '#dc2626' }}>-₹ {(paystub.deductions?.pf || 7200).toLocaleString()} / mo</strong>
+              </div>
+              <div className="paystub-row">
+                <span>Income Tax / TDS (10%)</span>
+                <strong style={{ color: '#dc2626' }}>-₹ {(paystub.deductions?.tax || 12000).toLocaleString()} / mo</strong>
+              </div>
+              <div className="paystub-row" style={{ borderTop: '2px solid #eee5d8', marginTop: 10, paddingTop: 10 }}>
+                <span>Total Monthly Deductions</span>
+                <strong style={{ color: '#dc2626' }}>-₹ {(paystub.deductions?.totalDeductions || 19200).toLocaleString()} / mo</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div style={{ textAlign: 'center', padding: 40, background: '#ffffff', borderRadius: 20, border: '1px solid #eee5d8' }}>
+          No paystub record found.
+        </div>
+      )}
     </div>
   );
 }

@@ -34,7 +34,7 @@ function saveDB() {
 
 loadDB();
 
-// Database Mock Engine matching prepared statement API
+// Database Engine matching prepared statement API
 const db = {
   pragma: () => {},
   exec: (sql) => {},
@@ -45,15 +45,19 @@ const db = {
       get: (...params) => {
         if (cleanSql.includes('FROM users WHERE email = ? OR employeeId = ?')) {
           const [email, empId] = params;
-          return data.users.find(u => u.email === email || u.employeeId === empId);
+          return data.users.find(u => u.email.toLowerCase() === (email || '').toLowerCase() || u.employeeId === empId);
         }
-        if (cleanSql.includes('FROM users WHERE email = ?')) {
+        if (cleanSql.includes('FROM users WHERE email = ?') || cleanSql.includes('WHERE LOWER(email) = ?')) {
           const [email] = params;
-          return data.users.find(u => u.email === email);
+          const target = (email || '').toLowerCase();
+          return data.users.find(u => u.email.toLowerCase() === target);
         }
         if (cleanSql.includes('FROM users WHERE id = ?')) {
           const [id] = params;
           return data.users.find(u => u.id == id);
+        }
+        if (cleanSql.includes('FROM users WHERE role = "Admin"') || cleanSql.includes("WHERE role = 'Admin'")) {
+          return data.users.find(u => u.role === 'Admin');
         }
         if (cleanSql.includes('FROM users WHERE role = ?')) {
           const [role] = params;
@@ -188,32 +192,61 @@ const db = {
 
       run: (...params) => {
         if (cleanSql.includes('INSERT INTO users')) {
-          const u = {
-            id: data.users.length > 0 ? Math.max(...data.users.map(x => x.id)) + 1 : 1,
-            employeeId: params[0],
-            name: params[1],
-            email: params[2],
-            password: params[3],
-            role: params[4],
-            phone: params[15] || params[5] || '',
-            address: params[16] || params[6] || '',
-            department: params[5] || '',
-            designation: params[6] || '',
-            joinDate: params[7] || new Date().toISOString().slice(0, 10),
-            salary: params[8] || 60000,
-            basicSalary: params[9] || 30000,
-            hra: params[10] || 15000,
-            allowances: params[11] || 15000,
-            pf: params[12] || 3600,
-            tax: params[13] || 6000,
-            isEmailVerified: params[14] !== undefined ? params[14] : (params[5] === 0 ? 0 : 1),
-            otpCode: params[6] || '',
-            documents: params[18] || '[]',
-            profilePicture: params[17] || '',
-            paidLeaveRemaining: 12,
-            sickLeaveRemaining: 8,
-            createdAt: new Date().toISOString()
-          };
+          let u;
+          if (cleanSql.includes('isEmailVerified')) {
+            u = {
+              id: data.users.length > 0 ? Math.max(...data.users.map(x => x.id)) + 1 : 1,
+              employeeId: params[0],
+              name: params[1],
+              email: params[2],
+              password: params[3],
+              role: params[4] || 'Employee',
+              isEmailVerified: params[5] !== undefined ? Number(params[5]) : 0,
+              otpCode: params[6] || '',
+              phone: '',
+              address: '',
+              department: 'General',
+              designation: 'Staff',
+              joinDate: new Date().toISOString().slice(0, 10),
+              salary: 60000,
+              basicSalary: 30000,
+              hra: 15000,
+              allowances: 15000,
+              pf: 3600,
+              tax: 6000,
+              profilePicture: (params[6] && typeof params[6] === 'string' && params[6].startsWith('http')) ? params[6] : '',
+              documents: '[]',
+              paidLeaveRemaining: 12,
+              sickLeaveRemaining: 8,
+              createdAt: new Date().toISOString()
+            };
+          } else {
+            u = {
+              id: data.users.length > 0 ? Math.max(...data.users.map(x => x.id)) + 1 : 1,
+              employeeId: params[0],
+              name: params[1],
+              email: params[2],
+              password: params[3],
+              role: params[4] || 'Employee',
+              department: params[5] || 'General',
+              designation: params[6] || 'Staff',
+              joinDate: params[7] || new Date().toISOString().slice(0, 10),
+              salary: params[8] || 60000,
+              basicSalary: params[9] || 30000,
+              hra: params[10] || 15000,
+              allowances: params[11] || 15000,
+              pf: params[12] || 3600,
+              tax: params[13] || 6000,
+              isEmailVerified: params[14] !== undefined ? Number(params[14]) : 1,
+              phone: params[15] || '',
+              address: params[16] || '',
+              profilePicture: params[17] || '',
+              documents: params[18] || '[]',
+              paidLeaveRemaining: 12,
+              sickLeaveRemaining: 8,
+              createdAt: new Date().toISOString()
+            };
+          }
           data.users.push(u);
           saveDB();
           return { lastInsertRowid: u.id };
@@ -328,7 +361,7 @@ const db = {
         if (cleanSql.includes('UPDATE attendance SET status = ? WHERE id = ?')) {
           const [st, id] = params;
           const a = data.attendance.find(x => x.id == id);
-          if (a) { a.status = st; saveDB(); }
+          if (a) { a.status = st; a.workHours = hrs; saveDB(); }
           return { changes: 1 };
         }
 
@@ -389,8 +422,8 @@ const db = {
   }
 };
 
-// Ensure default ElyVia Admin user is present and reset database to clean initial state
-const adminExists = data.users.find(u => u.email === 'admin@elyvia.com' || u.email === 'admin@dayflow.com');
+// Ensure default ElyVia Admin user is present
+const adminExists = data.users.find(u => u.email.toLowerCase() === 'admin@elyvia.com' || u.email.toLowerCase() === 'admin@dayflow.com' || u.role === 'Admin');
 if (!adminExists) {
   const adminHash = bcrypt.hashSync('Admin@123', 10);
   data.users.push({

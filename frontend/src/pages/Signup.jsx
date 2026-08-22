@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Shield, ArrowRight, Lock, Mail, User, Hash, CheckCircle2, ShieldAlert, Sparkles, Eye, EyeOff, KeyRound, RefreshCw } from 'lucide-react';
 import { useGoogleLogin } from '@react-oauth/google';
@@ -12,7 +12,7 @@ export default function Signup() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  // Step state: 'register' vs 'otp'
+  // Step state: 'register' vs 'otp' (Only used for manual signup!)
   const [step, setStep] = useState('register'); // 'register' | 'otp'
   const [otpInput, setOtpInput] = useState('');
   const [userToken, setUserToken] = useState('');
@@ -22,6 +22,16 @@ export default function Signup() {
 
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  // Auto-detect OTP from email button click URL (?otp=708733)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlOtp = params.get('otp');
+    if (urlOtp) {
+      setStep('otp');
+      setOtpInput(urlOtp);
+    }
+  }, []);
 
   const update = (field) => (e) => setForm({ ...form, [field]: e.target.value });
 
@@ -39,11 +49,30 @@ export default function Signup() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (!agreeTerms) {
-      setError('You must agree to the Terms of Service to create an account');
+    setError('');
+
+    // Strict Field Evaluation
+    if (!form.employeeId.trim()) {
+      setError('Employee ID is required (e.g. EMP-105)');
       return;
     }
-    setError('');
+    if (!form.name.trim()) {
+      setError('Full Name is required');
+      return;
+    }
+    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      setError('Please enter a valid work email address');
+      return;
+    }
+    if (form.password.length < 8 || !/[A-Za-z]/.test(form.password) || !/[0-9]/.test(form.password)) {
+      setError('Password must be at least 8 characters long and contain both letters and numbers');
+      return;
+    }
+    if (!agreeTerms) {
+      setError('You must agree to the Terms of Service & Privacy Policy to register');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -59,9 +88,9 @@ export default function Signup() {
   };
 
   const handleVerifyOTP = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!otpInput || otpInput.trim().length < 6) {
-      setError('Please enter the 6-digit OTP code sent to your email');
+      setError('Please enter the full 6-digit security code sent to your email');
       return;
     }
     setError('');
@@ -69,13 +98,12 @@ export default function Signup() {
 
     try {
       const res = await api.confirmVerifyEmail(userToken, otpInput.trim());
-      // Log the verified user in
       login(userToken, res.user);
       setTimeout(() => {
         navigate('/dashboard');
-      }, 1000);
+      }, 800);
     } catch (err) {
-      setError(err.message || 'Invalid or expired OTP code');
+      setError(err.message || 'Invalid or expired verification code');
     } finally {
       setLoading(false);
     }
@@ -87,7 +115,7 @@ export default function Signup() {
     setError('');
     try {
       await api.sendVerifyEmail(userToken);
-      setResendMsg('New OTP code dispatched to ' + registeredEmail);
+      setResendMsg('A new OTP verification code was sent to ' + registeredEmail);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -95,6 +123,7 @@ export default function Signup() {
     }
   };
 
+  // Google Sign-Up automatically verifies email and skips OTP screen completely!
   const handleGoogleSignUp = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       setLoading(true);
@@ -115,6 +144,7 @@ export default function Signup() {
           picture: googleUser.picture || ''
         });
 
+        // Direct Login without OTP for Google Accounts!
         login(res.token, res.user);
         navigate(res.user.role === 'Admin' ? '/admin' : '/dashboard');
       } catch (err) {
@@ -124,7 +154,7 @@ export default function Signup() {
       }
     },
     onError: () => {
-      setError('Google Sign-Up was cancelled or encountered an error.');
+      setError('Google Sign-Up popup was closed or cancelled.');
     }
   });
 
@@ -169,7 +199,7 @@ export default function Signup() {
             <div style={{ background: step === 'otp' ? '#b37a4c' : 'rgba(255, 255, 255, 0.15)', color: 'white', width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13 }}>2</div>
             <div>
               <div style={{ fontWeight: 700, fontSize: 14, color: 'white' }}>Email OTP Verification</div>
-              <div style={{ fontSize: 13, color: '#d1c1b5' }}>Instant OTP confirmation sent directly to your Gmail inbox.</div>
+              <div style={{ fontSize: 13, color: '#d1c1b5' }}>Instant OTP code dispatched to your Gmail inbox (Manual signups only).</div>
             </div>
           </div>
 
@@ -192,7 +222,7 @@ export default function Signup() {
         </div>
       </div>
 
-      {/* Right Column: Dynamic Step 1 vs Step 2 (Inline OTP) */}
+      {/* Right Column: Registration vs OTP Verification */}
       <div className="auth-form-section">
         {step === 'register' ? (
           <>
@@ -201,7 +231,7 @@ export default function Signup() {
               <p className="muted" style={{ marginTop: 4 }}>Get started with your company email</p>
             </div>
 
-            {/* Google Sign-Up Button */}
+            {/* Google Sign-Up Button (NO OTP REQUIRED FOR GOOGLE!) */}
             <button type="button" className="btn-google" onClick={() => handleGoogleSignUp()} disabled={loading}>
               <svg width="20" height="20" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -219,7 +249,7 @@ export default function Signup() {
             <form onSubmit={handleRegister}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 <div>
-                  <label>Employee ID</label>
+                  <label>Employee ID <span style={{ color: '#dc2626' }}>*</span></label>
                   <div style={{ position: 'relative' }}>
                     <Hash size={16} style={{ position: 'absolute', left: 12, top: 14, color: '#7a6758' }} />
                     <input
@@ -232,7 +262,7 @@ export default function Signup() {
                   </div>
                 </div>
                 <div>
-                  <label>Full Name</label>
+                  <label>Full Name <span style={{ color: '#dc2626' }}>*</span></label>
                   <div style={{ position: 'relative' }}>
                     <User size={16} style={{ position: 'absolute', left: 12, top: 14, color: '#7a6758' }} />
                     <input
@@ -246,7 +276,7 @@ export default function Signup() {
                 </div>
               </div>
 
-              <label>Work Email Address</label>
+              <label>Work Email Address <span style={{ color: '#dc2626' }}>*</span></label>
               <div style={{ position: 'relative' }}>
                 <Mail size={16} style={{ position: 'absolute', left: 12, top: 14, color: '#7a6758' }} />
                 <input
@@ -259,7 +289,7 @@ export default function Signup() {
                 />
               </div>
 
-              <label>Password</label>
+              <label>Password <span style={{ color: '#dc2626' }}>*</span></label>
               <div style={{ position: 'relative' }}>
                 <Lock size={16} style={{ position: 'absolute', left: 12, top: 14, color: '#7a6758' }} />
                 <input
@@ -302,7 +332,7 @@ export default function Signup() {
               {error && <div className="error-msg">{error}</div>}
 
               <button className="btn-primary" type="submit" disabled={loading} style={{ marginTop: 24 }}>
-                {loading ? 'Sending OTP Email...' : <>Register & Verify Email <ArrowRight size={16} /></>}
+                {loading ? 'Sending OTP Email...' : <>Register & Send Email OTP <ArrowRight size={16} /></>}
               </button>
             </form>
 
@@ -311,7 +341,7 @@ export default function Signup() {
             </div>
           </>
         ) : (
-          /* STEP 2: INLINE OTP VERIFICATION FORM ON THIS PAGE */
+          /* STEP 2: INLINE OTP VERIFICATION FOR MANUAL REGISTRATIONS ONLY */
           <div>
             <div style={{ marginBottom: 24, textAlign: 'center' }}>
               <div style={{ background: '#fff4c2', color: '#b37a4c', width: 56, height: 56, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', border: '1px solid #eee5d8' }}>
@@ -319,8 +349,8 @@ export default function Signup() {
               </div>
               <h2 style={{ fontSize: 26, fontWeight: 800, color: '#2b1b12' }}>Verify Email Address</h2>
               <p className="muted" style={{ marginTop: 6, fontSize: 14 }}>
-                We sent a 6-digit verification code to<br />
-                <strong style={{ color: '#2b1b12' }}>{registeredEmail}</strong>
+                A 6-digit security code was dispatched to<br />
+                <strong style={{ color: '#2b1b12' }}>{registeredEmail || 'your email'}</strong>
               </p>
             </div>
 
