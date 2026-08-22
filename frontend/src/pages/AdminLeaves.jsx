@@ -72,6 +72,8 @@ export default function AdminLeaves() {
     }
   };
 
+  const pendingCount = leaves.filter(l => l.status === 'Pending').length;
+
   return (
     <div className="container" style={{ paddingBottom: 60 }}>
       {/* DOUBLE CONFIRMATION MODAL FOR APPROVAL / REJECTION */}
